@@ -12,33 +12,40 @@ const ArrayTypes = {
 
 class MutableTypedArray {
     constructor(input, type) {
-        const MTAObj = new Object();
+        const MTAObj = {
+            set arrayContent(val) {
+                this.array = val;
+                this.buffer = val.buffer;
+                this.view = new DataView(val.buffer);
+            },
+            type: null,
+            typeConstructor: null,
+        }
         if (ArrayBuffer.isView(input)) {
+            MTAObj.arrayContent = input;
             MTAObj.type = input.constructor.name;
             MTAObj.typeConstructor = ArrayTypes[MTAObj.type];
-            MTAObj.array = input;
-            MTAObj.buffer = MTAObj.array.buffer;
         } else {
             let error = true;
             if (type) {
-                if (typeof(type) === "function") type = type.name;
+                if (typeof(type) === "function") {
+                    type = type.name;
+                }
+                if (!(type in ArrayTypes)) {
+                    throw new TypeError(`Unknown type: ${MTAObj.type}`);
+                }
                 MTAObj.type = type;
-                if (!(MTAObj.type in ArrayTypes)) throw new TypeError(`Unknown type: ${MTAObj.type}`);
                 MTAObj.typeConstructor = ArrayTypes[type];
                 if (input instanceof ArrayBuffer || Array.isArray(input)) {
-                    MTAObj.array = new MTAObj.typeConstructor(input);
-                    MTAObj.buffer = MTAObj.array.buffer;
+                    MTAObj.arrayContent = new MTAObj.typeConstructor(input);
                     error = false;
                 }
             }
             if (error) throw new TypeError("Input must be a TypedArray, an ArrayBuffer or an Array. For Array and ArrayBuffer the type needs to be specified as a second argument.");
         }
-        MTAObj.view = new DataView(MTAObj.buffer);
 
-        // append static functions
+        this.appendMethods(MTAObj);
         
-
-
         return MTAObj;
     }
 
@@ -54,14 +61,14 @@ class MutableTypedArray {
         return obj.constructor.name === type;
     }
 
-    static push(obj, b) {
+    static pushTo(obj, b) {
         const newArray = new ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj);
         newArray[obj.length] = b;
         return newArray;
     }
 
-    static shift(obj, b) {
+    static shiftTo(obj, b) {
         const newArray = new ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj, 1);
         newArray[0] = b;
@@ -78,4 +85,37 @@ class MutableTypedArray {
         return newArray;
     }
 
+    appendMethods(obj) {
+        obj.push = (b) => {
+            const oldArray = obj.array;
+            const lastIndex = oldArray.length;
+            const array = new obj.typeConstructor(lastIndex + 1);
+            array.set(oldArray);
+            array[lastIndex] = b;
+            obj.arrayContent = array;
+
+            return obj.array[lastIndex];
+        },
+
+        obj.shift = (b) => {
+            const oldArray = obj.array;
+            const array = new obj.typeConstructor(obj.array.length + 1);
+            array.set(oldArray, 1);
+            array[0] = b;
+            obj.arrayContent = array;
+            return obj.array[0];
+        },
+
+        obj.pop = () => {
+            const trace = obj.array.slice(-1)[0];
+            obj.arrayContent = obj.array.slice(0, -1);
+            return trace;
+        },
+
+        obj.unshift = () => {
+            const trace = obj.array[0];
+            obj.arrayContent = obj.array.slice(1);
+            return trace;
+        }
+    }
 }
