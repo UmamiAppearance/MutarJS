@@ -27,14 +27,14 @@ class MutableTypedArray {
         return obj.constructor.name === type;
     }
 
-    static pushTo(obj, b) {
+    static push(obj, b) {
         const newArray = new ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj);
         newArray[obj.length] = b;
         return newArray;
     }
 
-    static shiftTo(obj, b) {
+    static shift(obj, b) {
         const newArray = new ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj, 1);
         newArray[0] = b;
