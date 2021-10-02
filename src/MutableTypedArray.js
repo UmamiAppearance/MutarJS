@@ -21,6 +21,9 @@ class MutableTypedArray {
             type: null,
             typeConstructor: null,
         }
+        if (typeof(input) === "string") {
+            input = new TextEncoder().encode("string");
+        }
         if (ArrayBuffer.isView(input)) {
             MTAObj.arrayContent = input;
             MTAObj.type = input.constructor.name;
@@ -41,7 +44,7 @@ class MutableTypedArray {
                     error = false;
                 }
             }
-            if (error) throw new TypeError("Input must be a TypedArray, an ArrayBuffer or an Array. For Array and ArrayBuffer the type needs to be specified as a second argument.");
+            if (error) throw new TypeError("Input must be String, TypedArray, ArrayBuffer or Array. For Array and ArrayBuffer the type needs to be specified as a second argument.");
         }
 
         this.appendMethods(MTAObj);
@@ -68,7 +71,7 @@ class MutableTypedArray {
         return newArray;
     }
 
-    static shiftTo(obj, b) {
+    static unshiftTo(obj, b) {
         const newArray = new ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj, 1);
         newArray[0] = b;
@@ -86,36 +89,32 @@ class MutableTypedArray {
     }
 
     appendMethods(obj) {
-        obj.push = (b) => {
-            const oldArray = obj.array;
-            const lastIndex = oldArray.length;
-            const array = new obj.typeConstructor(lastIndex + 1);
-            array.set(oldArray);
-            array[lastIndex] = b;
-            obj.arrayContent = array;
 
-            return obj.array[lastIndex];
+        obj.concat = (arr) => {
+            const array = MutableTypedArray.concat(obj.array, arr);
+            return new MutableTypedArray(array);
         },
 
-        obj.shift = (b) => {
-            const oldArray = obj.array;
-            const array = new obj.typeConstructor(obj.array.length + 1);
-            array.set(oldArray, 1);
-            array[0] = b;
-            obj.arrayContent = array;
-            return obj.array[0];
+        obj.push = (b) => {
+            obj.array = MutableTypedArray.pushTo(obj.array, b);
+            return obj.array.slice(-1)[0];
         },
 
         obj.pop = () => {
-            const trace = obj.array.slice(-1)[0];
+            const popped = obj.array.slice(-1)[0];
             obj.arrayContent = obj.array.slice(0, -1);
-            return trace;
+            return popped;
         },
 
-        obj.unshift = () => {
-            const trace = obj.array[0];
+        obj.shift = () => {
+            const shifted = obj.array[0];
             obj.arrayContent = obj.array.slice(1);
-            return trace;
+            return shifted;
+        },
+
+        obj.unshift = (b) => {
+            obj.array = MutableTypedArray.unshiftTo(obj.array, b);
+            return obj.array[0];
         }
     }
 }
