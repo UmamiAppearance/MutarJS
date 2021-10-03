@@ -29,7 +29,7 @@ class MutableTypedArray {
         }
 
         if (typeof(input) === "string") {
-            input = new TextEncoder().encode("string");
+            input = new TextEncoder().encode(input);
         }
         
         if (ArrayBuffer.isView(input)) {
@@ -79,11 +79,19 @@ class MutableTypedArray {
         return newArray;
     }
 
+    static popFrom(obj) {
+        return [obj.slice(0, -1), obj.at(-1)];
+    }
+
     static unshiftTo(obj, b) {
         const newArray = new ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj, 1);
         newArray[0] = b;
         return newArray;
+    }
+
+    static shiftFrom(obj) {
+        return [obj.slice(1), obj.at(0)];
     }
 
     static concat(objA, objB) {
@@ -103,7 +111,7 @@ class MutableTypedArray {
             return new MutableTypedArray(array);
         };
 
-        obj.concatSet = (arr) => obj.arrayContent = obj.concat(arr).array;
+        obj.conset = (arr) => obj.arrayContent = obj.concat(arr).array;
 
         obj.push = (b) => {
             obj.arrayContent = MutableTypedArray.pushTo(obj.array, b);
@@ -111,20 +119,20 @@ class MutableTypedArray {
         };
 
         obj.pop = () => {
-            const popped = obj.array.at(-1)
-            obj.arrayContent = obj.array.slice(0, -1);
+            let popped;
+            [obj.arrayContent, popped] = MutableTypedArray.popFrom(obj.array);
             return popped;
-        };
-
-        obj.shift = () => {array
-            const shifted = obj.array[0];
-            obj.arrayContent = obj.array.slice(1);
-            return shifted;
         };
 
         obj.unshift = (b) => {
             obj.arrayContent = MutableTypedArray.unshiftTo(obj.array, b);
             return obj.array[0];
+        };
+
+        obj.shift = () => {
+            let shifted;
+            [obj.arrayContent, shifted] = MutableTypedArray.shiftFrom(obj.array);
+            return shifted;
         };
 
         // make build in methods accessible
