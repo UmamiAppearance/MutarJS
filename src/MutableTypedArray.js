@@ -1,48 +1,15 @@
 const ArrayTypes = {
-    Int8Array: {
-        fn: Int8Array,
-        bytes: 1
-    },
-    Uint8Array: {
-        fn: Uint8Array,
-        bytes: 1
-    },
-    Uint8ClampedArray: {
-        fn: Uint8ClampedArray,
-        bytes: 1
-    },
-    Int16Array: {
-        fn: Int16Array,
-        bytes: 2
-    },
-    Uint16Array: {
-        fn: Uint16Array,
-        bytes: 2
-    },
-    Int32Array: {
-        fn: Int32Array,
-        bytes: 4
-    },
-    Uint32Array: {
-        fn: Uint32Array,
-        bytes: 4
-    },
-    Float32Array: {
-        fn: Float32Array,
-        bytes: 4
-    },
-    Float64Array: {
-        fn: Float64Array,
-        bytes: 8
-    },
-    BigInt64Array: {
-        fn: BigInt64Array,
-        bytes: 8
-    },
-    BigUint64Array: {
-        fn: BigUint64Array,
-        bytes: 8
-    }
+    Int8Array: Int8Array,
+    Uint8Array: Uint8Array,
+    Uint8ClampedArray: Uint8ClampedArray,
+    Int16Array: Int16Array,
+    Uint16Array: Uint16Array,
+    Int32Array: Int32Array,
+    Uint32Array: Uint32Array,
+    Float32Array: Float32Array,
+    Float64Array: Float64Array,
+    BigInt64Array: BigInt64Array,
+    BigUint64Array: BigUint64Array
 }
 
 const bigEndian = (() => {  
@@ -74,13 +41,13 @@ class MutableTypedArray {
         if (ArrayBuffer.isView(input)) {
             MTAObj.arrayContent = input;
             MTAObj.type = input.constructor.name;
-            MTAObj.typeConstructor = ArrayTypes[MTAObj.type].fn;
+            MTAObj.typeConstructor = ArrayTypes[MTAObj.type];
         } else {
             let error = true;
             if (type) {
                 type = MutableTypedArray.typeFromInput(type);
                 MTAObj.type = type;
-                MTAObj.typeConstructor = ArrayTypes[type].fn;
+                MTAObj.typeConstructor = ArrayTypes[type];
                 if (input instanceof ArrayBuffer || Array.isArray(input)) {
                     MTAObj.arrayContent = new MTAObj.typeConstructor(input);
                     error = false;
@@ -119,21 +86,24 @@ class MutableTypedArray {
     static convert(obj, type, view) {
         type = MutableTypedArray.typeFromInput(type);
         const byteLen = obj.byteLength;
-        const missingBytes = byteLen % ArrayTypes[type].bytes;
+        const byteDiff = byteLen % ArrayTypes[type].BYTES_PER_ELEMENT;
+        console.log(byteDiff);
         
         let newArray;
 
-        if (!missingBytes) {
-            newArray = new ArrayTypes[type].fn(obj.buffer);
+        if (!byteDiff) {
+            newArray = new ArrayTypes[type](obj.buffer);
         } else {
-            const newLen = byteLen + ArrayTypes[type].bytes - missingBytes;
+            const missingBytes = ArrayTypes[type].BYTES_PER_ELEMENT - byteDiff;
+            const newLen = byteLen + missingBytes;
             if (view) view = new DataView(obj.buffer);
             const Uint8 = new Uint8Array(newLen);
             const start = (bigEndian) ? missingBytes : 0;
             for (let i=0, l=obj.byteLength; i<l; i++) {
                 Uint8[i+start] = view.getUint8(i);
             }
-            newArray = new ArrayTypes[type].fn(Uint8.buffer);
+            console.log(Uint8);
+            newArray = new ArrayTypes[type](Uint8.buffer);
         }
         return newArray;
     }
@@ -150,7 +120,7 @@ class MutableTypedArray {
     }
 
     static unshiftTo(obj, b) {
-        const newArray = new ArrayTypes[obj.constructor.name].fn(obj.length + 1);
+        const newArray = new ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj, 1);
         newArray[0] = b;
         return newArray;
@@ -164,7 +134,7 @@ class MutableTypedArray {
         if (objA.constructor.name !== objB.constructor.name) {
             throw new TypeError(`You are trying to concatenate two different types of arrays ('${objA.constructor.name}' and '${objB.constructor.name}')\nThis can only be done by converting them into the same type before.`);
         }
-        const newArray = new ArrayTypes[objA.constructor.name].fn(objA.length + objB.length);
+        const newArray = new ArrayTypes[objA.constructor.name](objA.length + objB.length);
         newArray.set(objA);
         newArray.set(objB, objA.length);
         return newArray;
