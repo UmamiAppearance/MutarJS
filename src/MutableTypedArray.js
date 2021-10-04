@@ -116,7 +116,7 @@ class MutableTypedArray {
         return obj.constructor.name === type;
     }
 
-    static convert(obj, type) {
+    static convert(obj, type, view) {
         type = MutableTypedArray.typeFromInput(type);
         const byteLen = obj.byteLength;
         const missingBytes = byteLen % ArrayTypes[type].bytes;
@@ -127,7 +127,7 @@ class MutableTypedArray {
             newArray = new ArrayTypes[type].fn(obj.buffer);
         } else {
             const newLen = byteLen + ArrayTypes[type].bytes - missingBytes;
-            const view = new DataView(obj.buffer);
+            if (view) view = new DataView(obj.buffer);
             const Uint8 = new Uint8Array(newLen);
             const start = (bigEndian) ? missingBytes : 0;
             for (let i=0, l=obj.byteLength; i<l; i++) {
@@ -178,6 +178,8 @@ class MutableTypedArray {
         };
 
         obj.conset = (arr) => obj.arrayContent = obj.concat(arr).array;
+
+        obj.convert = (type) => obj.arrayContent = MutableTypedArray.convert(obj, type, obj.view);
 
         obj.push = (b) => {
             obj.arrayContent = MutableTypedArray.pushTo(obj.array, b);
