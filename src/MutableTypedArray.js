@@ -85,7 +85,7 @@ class MTA {
 
     static concat(objA, objB) {
         if (objA.constructor.name !== objB.constructor.name) {
-            throw new TypeError(`You are trying to concatenate two different types of arrays ('${objA.constructor.name}' and '${objB.constructor.name}')\nThis can only be done by converting them into the same type before.`);
+            throw new TypeError(`You are trying to concatenate two different types of arrays ('${objA.constructor.name}' and '${objB.constructor.name}')\nThis can only be done by converting them into the same type first.`);
         }
         const newArray = new ArrayTypes[objA.constructor.name](objA.length + objB.length);
         newArray.set(objA);
@@ -106,7 +106,7 @@ class MTA {
         } else {
             const missingBytes = ArrayTypes[type].BYTES_PER_ELEMENT - byteDiff;
             const newLen = byteLen + missingBytes;
-            if (view) view = new DataView(obj.buffer);
+            if (!view) view = new DataView(obj.buffer);
             let Uint8 = new Uint8Array(newLen);
             const start = (bigEndian) ? missingBytes : 0;
             for (let i=0, l=obj.byteLength; i<l; i++) {
