@@ -18,11 +18,11 @@ const bigEndian = (() => {
     return Boolean(byteRepresentation[1]);
 })();
 
-class MutableTypedArray {
+class MTA {
     constructor(input, type) {
         
         const MTAObj = {
-            set arrayContent(val) {
+            set arraySetter(val) {
                 this.array = val;
                 this.buffer = val.buffer;
                 this.byteLength = val.byteLength;
@@ -39,17 +39,17 @@ class MutableTypedArray {
         }
         
         if (ArrayBuffer.isView(input)) {
-            MTAObj.arrayContent = input;
+            MTAObj.arraySetter = input;
             MTAObj.type = input.constructor.name;
             MTAObj.typeConstructor = ArrayTypes[MTAObj.type];
         } else {
             let error = true;
             if (type) {
-                type = MutableTypedArray.typeFromInput(type);
+                type = MTA.typeFromInput(type);
                 MTAObj.type = type;
                 MTAObj.typeConstructor = ArrayTypes[type];
                 if (input instanceof ArrayBuffer || Array.isArray(input)) {
-                    MTAObj.arrayContent = new MTAObj.typeConstructor(input);
+                    MTAObj.arraySetter = new MTAObj.typeConstructor(input);
                     error = false;
                 }
             }
@@ -83,28 +83,38 @@ class MutableTypedArray {
         return obj.constructor.name === type;
     }
 
-    static convert(obj, type, view) {
-        type = MutableTypedArray.typeFromInput(type);
+    static concat(objA, objB) {
+        if (objA.constructor.name !== objB.constructor.name) {
+            throw new TypeError(`You are trying to concatenate two different types of arrays ('${objA.constructor.name}' and '${objB.constructor.name}')\nThis can only be done by converting them into the same type before.`);
+        }
+        const newArray = new ArrayTypes[objA.constructor.name](objA.length + objB.length);
+        newArray.set(objA);
+        newArray.set(objB, objA.length);
+        return newArray;
+    }
+
+    static convert(obj, type, trim=false, view=null) {
+        type = MTA.typeFromInput(type);
         const byteLen = obj.byteLength;
         const byteDiff = byteLen % ArrayTypes[type].BYTES_PER_ELEMENT;
-        console.log(byteDiff);
         
         let newArray;
 
         if (!byteDiff) {
             newArray = new ArrayTypes[type](obj.buffer);
+            if (trim) newArray = MTA.trim(newArray);
         } else {
             const missingBytes = ArrayTypes[type].BYTES_PER_ELEMENT - byteDiff;
             const newLen = byteLen + missingBytes;
             if (view) view = new DataView(obj.buffer);
-            const Uint8 = new Uint8Array(newLen);
+            let Uint8 = new Uint8Array(newLen);
             const start = (bigEndian) ? missingBytes : 0;
             for (let i=0, l=obj.byteLength; i<l; i++) {
                 Uint8[i+start] = view.getUint8(i);
             }
-            console.log(Uint8);
             newArray = new ArrayTypes[type](Uint8.buffer);
         }
+
         return newArray;
     }
 
@@ -130,48 +140,83 @@ class MutableTypedArray {
         return [obj.slice(1), obj.at(0)];
     }
 
-    static concat(objA, objB) {
-        if (objA.constructor.name !== objB.constructor.name) {
-            throw new TypeError(`You are trying to concatenate two different types of arrays ('${objA.constructor.name}' and '${objB.constructor.name}')\nThis can only be done by converting them into the same type before.`);
+    static trim(obj) {
+        
+        function giveBack(bytes, bytesPerElem) {
+            let adder = 0;
+            while (bytes % bytesPerElem) {
+                bytes++;
+                adder++;
+            }
+            return adder;
         }
-        const newArray = new ArrayTypes[objA.constructor.name](objA.length + objB.length);
-        newArray.set(objA);
-        newArray.set(objB, objA.length);
-        return newArray;
+
+        const type = obj.constructor.name;
+        const bytesPerElem = obj.constructor.BYTES_PER_ELEMENT;
+        const isGrouped = (bytesPerElem > 1);
+        
+        let singleBytesView = (isGrouped) ? new Uint8Array(obj.buffer) : obj;
+
+        const absEnd = obj.byteLength-1;
+        let end = absEnd;
+        let start = 0;
+
+        if (bigEndian) {
+            for (start; start<=end; start++) {
+                if (singleBytesView[start]) {
+                    break;
+                }
+            }
+            if (isGrouped) start += giveBack(end-start+1, bytesPerElem);
+        } else {
+            for (end; end>=0; end--) {
+                if (singleBytesView[end]) {
+                    break;
+                }
+            }
+            if (isGrouped) end += giveBack(end-start+1, bytesPerElem);
+        }
+        if (start > 0 || end < absEnd) {
+            singleBytesView = singleBytesView.slice(start, end+1);
+            obj = new ArrayTypes[type](singleBytesView.buffer);
+        }
+        return obj;
     }
 
     appendMethods(obj) {
 
         obj.concat = (arr) => {
-            const array = MutableTypedArray.concat(obj.array, arr);
-            return new MutableTypedArray(array);
+            const array = MTA.concat(obj.array, arr);
+            return new MTA(array);
         };
 
-        obj.conset = (arr) => obj.arrayContent = obj.concat(arr).array;
+        obj.conset = (arr) => obj.arraySetter = obj.concat(arr).array;
 
-        obj.convert = (type) => obj.arrayContent = MutableTypedArray.convert(obj, type, obj.view);
+        obj.convert = (type, trim=false) => obj.arraySetter = MTA.convert(obj, type, trim, obj.view);
 
         obj.push = (b) => {
-            obj.arrayContent = MutableTypedArray.pushTo(obj.array, b);
+            obj.arraySetter = MTA.pushTo(obj.array, b);
             return obj.array.at(-1);
         };
 
         obj.pop = () => {
             let popped;
-            [obj.arrayContent, popped] = MutableTypedArray.popFrom(obj.array);
+            [obj.arraySetter, popped] = MTA.popFrom(obj.array);
             return popped;
         };
 
         obj.unshift = (b) => {
-            obj.arrayContent = MutableTypedArray.unshiftTo(obj.array, b);
+            obj.arraySetter = MTA.unshiftTo(obj.array, b);
             return obj.array[0];
         };
 
         obj.shift = () => {
             let shifted;
-            [obj.arrayContent, shifted] = MutableTypedArray.shiftFrom(obj.array);
+            [obj.arraySetter, shifted] = MTA.shiftFrom(obj.array);
             return shifted;
         };
+
+        obj.trim = () => obj.arraySetter = MTA.trim(obj.array);
 
         // make build in methods accessible
         obj.at = (...args) => obj.array.at(...args);
