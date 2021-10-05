@@ -23,7 +23,15 @@ const ArrayTypes = {
     BigUint64Array: BigUint64Array
 }
 
-// Test endianness 
+// Test endianness:
+// Uint16Array: Uint16Array(1) [ 1 ]
+// Binary:       [00000000 00000001]
+// Uint8 (b.end.)              [0 1]
+// Uint8 (l.end.)              [1 0]
+
+// Looking at index 1 shows 1 for
+// big endian and 0 for little endian
+
 const bigEndian = (() => {  
     const testInt = new Uint16Array([1]);
     const byteRepresentation = new Uint8Array(testInt.buffer);
@@ -165,13 +173,23 @@ class MTA {
         let newArray;
 
         if (!byteDiff) {
+            // zero padding is not needed and can get trimmed in some cases
             newArray = new ArrayTypes[type](obj.buffer);
             if (trim) newArray = MTA.trim(newArray);
         } else {
+            // zero padding is necessary
             const missingBytes = ArrayTypes[type].BYTES_PER_ELEMENT - byteDiff;
             const newLen = byteLen + missingBytes;
             if (!view) view = new DataView(obj.buffer);
+            
+            // initialize a new Uint8Array of the needed byte length
             let Uint8 = new Uint8Array(newLen);
+            
+            // Fill the array with the values of the old array
+            // (little endian starts on the left hand side. 
+            // Insertion can start an 0. Big endian has a
+            // calculated starting point).
+
             const start = (bigEndian) ? missingBytes : 0;
             for (let i=0, l=obj.byteLength; i<l; i++) {
                 Uint8[i+start] = view.getUint8(i);
