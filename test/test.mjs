@@ -27,13 +27,18 @@ function makeUnit(unit) {
 }
 
 function typeTest() {
+    /*
+        Tests for the simple functions of type 
+        conversions and type analysis.
+    */
+   
     const unit = "type-test";
     const Uint8 = new Uint8Array(1);
     makeUnit(unit);
 
     const inputs = [Uint8Array, Uint8, Uint8];
     const expectations = ["Uint8Array", "Uint8Array", true, true];
-    
+
     ["typeFromInput", "getType", "isTypedArray"].forEach((subUnit, i) => {
         results.tests++;
         results.units[unit].tests++;
@@ -52,6 +57,18 @@ function typeTest() {
 
     results.tests++;
     results.units[unit].tests++;
+
+    const output = Mutar.isTypeOf(Uint8, "Uint8Array");
+    if (output === false) {
+        makeError(
+            unit,
+            "isTypeOf",
+            Uint8,
+            output,
+            true
+        );
+    }
+
 
 }
 
