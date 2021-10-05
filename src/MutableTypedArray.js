@@ -1,3 +1,14 @@
+/*
+ * [BrowserSHAObj]{@link https://github.com/UmamiAppearance/MutableTypedArrayJS}
+ *
+ * @version 0.1.0
+ * @author UmamiAppearance [mail@umamiappearance.eu]
+ * @license GPL-3.0
+ */
+ 
+
+// Object which contains all possible TypedArrays
+// and it's constructor
 const ArrayTypes = {
     Int8Array: Int8Array,
     Uint8Array: Uint8Array,
@@ -12,15 +23,44 @@ const ArrayTypes = {
     BigUint64Array: BigUint64Array
 }
 
+// Test endianness 
 const bigEndian = (() => {  
     const testInt = new Uint16Array([1]);
     const byteRepresentation = new Uint8Array(testInt.buffer);
     return Boolean(byteRepresentation[1]);
 })();
 
+
 class MTA {
+    /*
+        Main class. It is both toolkit to interact with typed arrays and 
+        "modify" them and a constructor of a special object. Or  let's
+        say a kit to emulate modification. In Fact each time a  new array
+        is created. 
+        This comes to a price of course. Each time the array "changes",
+        a new array is allocated in memory. This program is simply not
+        suitable to handle big amounts of data. "Big amount" is relative, 
+        but lets say if your program is using a lot of the available memory,
+        you should consider other solutions.
+        If this is not the case, this is a very convenient way to handle
+        binary data. If constructed, the array behaves pretty much as a 
+        regular array. You can concatenate, pop, shift, unshift...
+        On top of that the type can be changed from - let's say - Uint8 to 
+        Float64. Also zero padding can get trimmed. 
+    */
+
     constructor(input, type) {
-        
+        /*
+            Creates a special object. The actual array is locate
+            at obj.array, all methods are available at top level.
+            Those are all available methods for typed arrays and
+            regular arrays. Plus some bonus features.
+            
+            @input: Can be a TypedArray, a string or buffer and regular array
+            @type: A string that needs to be specified for buffer and regular arrayS
+        */
+
+        // The actual object, which is returned after construction.
         const MTAObj = {
             set arraySetter(val) {
                 this.array = val;
@@ -34,6 +74,7 @@ class MTA {
             typeConstructor: null,
         }
 
+        // Strings are automatically converted to a Uint8Array.
         if (typeof(input) === "string") {
             input = new TextEncoder().encode(input);
         }
