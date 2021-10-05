@@ -1,11 +1,13 @@
 {
-  "name": "mutable-typed-array",
+  "name": "mutar",
   "version": "0.1.0",
   "description": "Toolkit and constructor to manipulate typed arrays.",
-  "main": "index.js",
+  "main": "dist/Mutar.cjs",
+  "module": "src/Mutar.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "makeCJS": "rollup src/MutableTypedArray.js --file dist/MutableTypedArray.cjs --format cjs",
+    "makeCJS": "rollup src/Mutar.js --file dist/Mutar.cjs --format cjs",
     "lint": "eslint ./"
   },
   "repository": {

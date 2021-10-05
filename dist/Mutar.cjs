@@ -1,3 +1,5 @@
+'use strict';
+
 /*
  * [Mutar]{@link https://github.com/UmamiAppearance/MutableTypedArrayJS}
  *
@@ -22,7 +24,7 @@ const ArrayTypes = {
     Float64Array: Float64Array,
     BigInt64Array: BigInt64Array,
     BigUint64Array: BigUint64Array
-}
+};
 
 // Test endianness:
 // Uint16Array: Uint16Array(1) [ 1 ]
@@ -82,7 +84,7 @@ class Mutar {
             },
             type: null,
             typeConstructor: null,
-        }
+        };
 
         // Strings are automatically converted to a Uint8Array.
         if (typeof(input) === "string") {
@@ -331,7 +333,7 @@ class Mutar {
             obj.arraySetter = Mutar.convert(obj, type, trim, obj.view);
             obj.type = type;
             obj.typeConstructor = ArrayTypes[type];
-        }
+        };
 
         obj.push = (b) => {
             obj.arraySetter = Mutar.pushTo(obj.array, b);
@@ -385,4 +387,4 @@ class Mutar {
     }
 }
 
-export default Mutar
+module.exports = Mutar;
