@@ -1,5 +1,5 @@
 /*
- * [BrowserSHAObj]{@link https://github.com/UmamiAppearance/MutableTypedArrayJS}
+ * [MutableTypedArray]{@link https://github.com/UmamiAppearance/MutableTypedArrayJS}
  *
  * @version 0.1.0
  * @author UmamiAppearance [mail@umamiappearance.eu]
@@ -79,10 +79,15 @@ class MTA {
             input = new TextEncoder().encode(input);
         }
         
+        // If the input is a TypedArray all information can
+        // get read from that object.
         if (ArrayBuffer.isView(input)) {
             MTAObj.arraySetter = input;
             MTAObj.type = input.constructor.name;
             MTAObj.typeConstructor = ArrayTypes[MTAObj.type];
+        
+        // If not the type must be specified and a new typed
+        // array gets constructed based on the given information.
         } else {
             let error = true;
             if (type) {
@@ -94,15 +99,22 @@ class MTA {
                     error = false;
                 }
             }
-            if (error) throw new TypeError("Input must be String, TypedArray, ArrayBuffer or Array. For Array and ArrayBuffer the type needs to be specified as a second argument.");
+            if (error) throw new TypeError("For Array and ArrayBuffer the type needs to be specified as a second argument.");
         }
 
+        // Append all methods for interaction
         this.appendMethods(MTAObj);
         
         return MTAObj;
     }
 
+    
+    // Static methods. To use MTA as a toolkit for 
+    // interacting with typed arrays.
+
     static typeFromInput(type) {
+        // Extract the type from a TypedArray constructor
+
         if (typeof(type) === "function") {
             type = type.name;
         }
@@ -113,18 +125,24 @@ class MTA {
     }
 
     static getType(obj) {
+        // Returns the name of the constructor (Uint8Array, Int16Array, ...)
         return obj.constructor.name;
     }
     
     static isTypedArray(obj) {
+        // Test if object is a typed array
         return obj.constructor.name in ArrayTypes;
     }
 
     static isTypeOf(obj, type) {
+        // Test if array is of type xy
         return obj.constructor.name === type;
     }
 
     static concat(objA, objB) {
+        // Concatenates two typed array and returns
+        // a combined array.
+
         if (objA.constructor.name !== objB.constructor.name) {
             throw new TypeError(`You are trying to concatenate two different types of arrays ('${objA.constructor.name}' and '${objB.constructor.name}')\nThis can only be done by converting them into the same type first.`);
         }
@@ -135,6 +153,11 @@ class MTA {
     }
 
     static convert(obj, type, trim=false, view=null) {
+        // Converts a given TypedArray to another type.
+        // If the new type has less bytes grouped, it is
+        // Possible to trim leftover zero padding. If a
+        // view is already at hand it can get passed too.
+
         type = MTA.typeFromInput(type);
         const byteLen = obj.byteLength;
         const byteDiff = byteLen % ArrayTypes[type].BYTES_PER_ELEMENT;
@@ -160,6 +183,8 @@ class MTA {
     }
 
     static pushTo(obj, b) {
+        // Pushes one byte to the end of a given array.
+
         const newArray = new ArrayTypes[obj.constructor.name].fn(obj.length + 1);
         newArray.set(obj);
         newArray[obj.length] = b;
@@ -167,10 +192,16 @@ class MTA {
     }
 
     static popFrom(obj) {
+        // Removes one byte from a given array.
+        // Returns the new array and the removed
+        // byte.
+
         return [obj.slice(0, -1), obj.at(-1)];
     }
 
     static unshiftTo(obj, b) {
+        // Unshifts one byte ro a given array.
+
         const newArray = new ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj, 1);
         newArray[0] = b;
@@ -178,12 +209,41 @@ class MTA {
     }
 
     static shiftFrom(obj) {
+        // Shifts one byte from a given array
+        // Returns the new array and the removed
+        // byte.
+
         return [obj.slice(1), obj.at(0)];
     }
 
     static trim(obj) {
+        // Trims null bytes from the given array and returns 
+        // a new array. Only padded zeros are getting removed
+        // respecting the endianness.
+        // Example:
+        // Integer '400'  binary '110010000'
+        // As a Uint32Array: 'Uint32Array(1) [ 400 ]'
+        //     -> [00000000000000000000000110010000]
+        // As a Uint8Array (big endian):
+        // Uint8Array(4) 
+        //     [       0,       0,       1,     144]
+        //  -> [00000000 00000000 00000001 10010000]
+        //
+        // As you can see: the first two bytes are holding
+        // no information and can get trimmed without losing
+        // information.
+        // In little endian it is the same, but the oder is
+        // flipped. 
+        //   -> [10010000 00000001 00000000 00000000]
+        // Here the last to bytes gan get trimmed.
         
         function giveBack(bytes, bytesPerElem) {
+            // The trimming below removes all null bytes,
+            // but for all types > (U)int8 zero padding
+            // a necessity. The actual trimming is done
+            // via index keys. This functions sets the 
+            // index back to a legit value.
+
             let adder = 0;
             while (bytes % bytesPerElem) {
                 bytes++;
@@ -196,12 +256,17 @@ class MTA {
         const bytesPerElem = obj.constructor.BYTES_PER_ELEMENT;
         const isGrouped = (bytesPerElem > 1);
         
+        // Set a view that is able to look at single bytes
+        // (If this is not already the case) 
         let singleBytesView = (isGrouped) ? new Uint8Array(obj.buffer) : obj;
 
+        // Set initial start-end index values 
         const absEnd = obj.byteLength-1;
         let end = absEnd;
         let start = 0;
 
+        // Look at the right hand side for big endian
+        // and left hand for little endian. 
         if (bigEndian) {
             for (start; start<=end; start++) {
                 if (singleBytesView[start]) {
@@ -217,12 +282,19 @@ class MTA {
             }
             if (isGrouped) end += giveBack(end-start+1, bytesPerElem);
         }
+
+        // Only construct a new array if changes are possible
         if (start > 0 || end < absEnd) {
             singleBytesView = singleBytesView.slice(start, end+1);
             obj = new ArrayTypes[type](singleBytesView.buffer);
         }
         return obj;
     }
+
+
+    // Methods that are appended to the obj, called 
+    // by the constructor. The obj methods are using 
+    // the static methods
 
     appendMethods(obj) {
 
@@ -231,6 +303,7 @@ class MTA {
             return new MTA(array);
         };
 
+        // concat and set the array to the concatenated array.
         obj.conset = (arr) => obj.arraySetter = obj.concat(arr).array;
 
         obj.convert = (type, trim=false) => obj.arraySetter = MTA.convert(obj, type, trim, obj.view);
@@ -259,7 +332,7 @@ class MTA {
 
         obj.trim = () => obj.arraySetter = MTA.trim(obj.array);
 
-        // make build in methods accessible
+        // make build in methods accessible at top level
         obj.at = (...args) => obj.array.at(...args);
         obj.copyWithin = (...args) => obj.array.copyWithin(...args);
         obj.entries = (...args) => obj.array.entries(...args);
@@ -286,3 +359,5 @@ class MTA {
         obj.values = (...args) => obj.array.values(...args);
     }
 }
+
+export default MTA
