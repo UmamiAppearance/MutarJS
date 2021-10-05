@@ -1,0 +1,32 @@
+{
+  "name": "mutable-typed-array",
+  "version": "0.1.0",
+  "description": "Toolkit and constructor to manipulate typed arrays.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "makeCJS": "rollup src/MutableTypedArray.js --file dist/MutableTypedArray.cjs --format cjs",
+    "lint": "eslint ./"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UmamiAppearance/MutableTypedArrayJS.git"
+  },
+  "keywords": [
+    "TypedArray",
+    "Binary",
+    "Bytes",
+    "Array"
+  ],
+  "author": "UmamiAppearance",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/UmamiAppearance/MutableTypedArrayJS/issues"
+  },
+  "homepage": "https://github.com/UmamiAppearance/MutableTypedArrayJS#readme",
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "rollup": "^2.58.0",
+    "rollup-plugin-terser": "^7.0.2"
+  }
+}

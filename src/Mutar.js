@@ -1,5 +1,5 @@
 /*
- * [MutableTypedArray]{@link https://github.com/UmamiAppearance/MutableTypedArrayJS}
+ * [Mutar]{@link https://github.com/UmamiAppearance/MutableTypedArrayJS}
  *
  * @version 0.1.0
  * @author UmamiAppearance [mail@umamiappearance.eu]
@@ -9,6 +9,7 @@
 
 // Object which contains all possible TypedArrays
 // and it's constructor
+
 const ArrayTypes = {
     Int8Array: Int8Array,
     Uint8Array: Uint8Array,
