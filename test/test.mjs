@@ -1,34 +1,64 @@
+/* eslint-disable no-console */
 import Mutar from "../src/Mutar.js";
 
 const results = {
-    total: 0,
+    tests: 0,
     errors: 0,
     errorMessages: {},
     units: {}
 };
 
-function makeError(unit) {
+function makeError(unit, subUnit, input, output, expected) {
     results.errors++;
-    if (!(unit in results.units)) {
-        results.units[unit] = {};
-        results.errorMessages[unit] = {};
-    }
-    
+    results.units[unit].errors++;
+    const IOpart = `Input: ${input}\nOutput: ${output}\nExpected: ${expected}`;
+    results.errorMessages[unit][`#${results.errors}`] = `${subUnit}: ${IOpart}`;
+
+    const message = `Error occurred while testing '${unit}' ('${subUnit}'):\n${IOpart}`;
+    console.error(message);
+}
+
+function makeUnit(unit) {
+    results.units[unit] = {
+        errors: 0,
+        tests: 0,
+    };
+    results.errorMessages[unit] = {}; 
 }
 
 function typeTest() {
     const unit = "type-test";
     const Uint8 = new Uint8Array(1);
-    const expectation = "Uint8Array";
+    makeUnit(unit);
 
-    results.total++;
-    if (Mutar.typeFromInput(Uint8) !== expectation) {
-        makeError(unit);
-    }
+    const inputs = [Uint8Array, Uint8, Uint8];
+    const expectations = ["Uint8Array", "Uint8Array", true, true];
+    
+    ["typeFromInput", "getType", "isTypedArray"].forEach((subUnit, i) => {
+        results.tests++;
+        results.units[unit].tests++;
+
+        const output = Mutar[subUnit](inputs[i]);
+        if (output !== expectations[i]) {
+            makeError(
+                unit,
+                subUnit,
+                Uint8,
+                output,
+                expectations[i]
+            );
+        }
+    });
+
+    results.tests++;
+    results.units[unit].tests++;
+
 }
 
 function main() {
     typeTest();
+
+    console.log(results);
 }
 
 main();
