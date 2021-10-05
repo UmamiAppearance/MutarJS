@@ -33,10 +33,10 @@ const ArrayTypes = {
 // Looking at index 1 shows 1 for
 // big endian and 0 for little endian
 
-const bigEndian = (() => {  
+const littleEndian = (() => {  
     const testInt = new Uint16Array([1]);
     const byteRepresentation = new Uint8Array(testInt.buffer);
-    return Boolean(byteRepresentation[1]);
+    return Boolean(byteRepresentation[0]);
 })();
 
 
@@ -184,7 +184,7 @@ class Mutar {
             const newLen = byteLen + missingBytes;
             if (!view) view = new DataView(obj.buffer);
             
-            // initialize a new Uint8Array of the needed byte length
+            // initialize a new Uint8Array of the required byte length
             let Uint8 = new Uint8Array(newLen);
             
             // Fill the array with the values of the old array
@@ -192,9 +192,9 @@ class Mutar {
             // Insertion can start an 0. Big endian has a
             // calculated starting point).
 
-            const start = (bigEndian) ? missingBytes : 0;
+            const start = (littleEndian) ? 0 : missingBytes;
             for (let i=0, l=obj.byteLength; i<l; i++) {
-                Uint8[i+start] = view.getUint8(i);
+                Uint8[i+start] = view.getUint8(i, littleEndian);
             }
             newArray = new ArrayTypes[type](Uint8.buffer);
         }
@@ -239,23 +239,28 @@ class Mutar {
     static trim(obj) {
         // Trims null bytes from the given array and returns 
         // a new array. Only padded zeros are getting removed
-        // respecting the endianness.
+        // according to the endianness.
+        //
         // Example:
-        // Integer '400'  binary '110010000'
-        // As a Uint32Array: 'Uint32Array(1) [ 400 ]'
-        //     -> [00000000000000000000000110010000]
+        // Integer '400',  binary '110010000'
+        //
+        // As a Uint32Array:   'Uint32Array(1) [ 400 ]'
+        //       -> [00000000000000000000000110010000]
+        //
         // As a Uint8Array (big endian):
         // Uint8Array(4) 
-        //     [       0,       0,       1,     144]
-        //  -> [00000000 00000000 00000001 10010000]
+        //    [       0,        0,        1,      144]
+        //    [00000000, 00000000, 00000001, 10010000]
         //
         // As you can see: the first two bytes are holding
         // no information and can get trimmed without losing
         // information.
-        // In little endian it is the same, but the oder is
+        //
+        // In little endian it is the same, but the order is
         // flipped. 
-        //   -> [10010000 00000001 00000000 00000000]
-        // Here the last to bytes gan get trimmed.
+        // 
+        //    [10010000, 00000001, 00000000, 00000000]
+        // -> the last two bytes can get trimmed
         
         function giveBack(bytes, bytesPerElem) {
             // The trimming below removes all null bytes,
@@ -287,7 +292,7 @@ class Mutar {
 
         // Look at the right hand side for big endian
         // and left hand for little endian. 
-        if (bigEndian) {
+        if (!littleEndian) {
             for (start; start<=end; start++) {
                 if (singleBytesView[start]) {
                     break;
