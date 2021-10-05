@@ -30,8 +30,8 @@ const ArrayTypes = {
 // Uint8 (b.end.)              [0 1]
 // Uint8 (l.end.)              [1 0]
 
-// Looking at index 1 shows 1 for
-// big endian and 0 for little endian
+// Looking at index 0 shows 0 for
+// big endian and 1 for little endian
 
 const littleEndian = (() => {  
     const testInt = new Uint16Array([1]);
