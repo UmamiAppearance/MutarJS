@@ -144,9 +144,14 @@ class Mutar {
 
     static isTypeOf(obj, type) {
         // Test if array is of type xy
-        
+
         type = Mutar.typeFromInput(type);
         return obj.constructor.name === type;
+    }
+
+    static clone(obj) {
+        // returns a copy of the given array
+        return obj.slice();
     }
 
     static concat(objA, objB) {
@@ -323,6 +328,10 @@ class Mutar {
 
     appendMethods(obj) {
 
+        obj.extractArray = () => obj.array;
+
+        obj.extractArrayClone = () => obj.array.slice();
+
         obj.concat = (arr) => {
             const array = Mutar.concat(obj.array, arr);
             return new Mutar(array);
@@ -337,6 +346,9 @@ class Mutar {
             obj.type = type;
             obj.typeConstructor = ArrayTypes[type];
         }
+
+        // returns a clone of the current obj
+        obj.clone = () => new Mutar(obj.array.slice());
 
         obj.push = (b) => {
             obj.arraySetter = Mutar.pushTo(obj.array, b);
