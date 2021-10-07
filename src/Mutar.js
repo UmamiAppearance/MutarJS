@@ -328,8 +328,6 @@ class Mutar {
 
     appendMethods(obj) {
 
-        obj.extractArray = () => obj.array;
-
         obj.extractArrayClone = () => obj.array.slice();
 
         obj.concat = (arr) => {

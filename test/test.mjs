@@ -318,7 +318,10 @@ function cloneForeign() {
             `${expectedA} && ${expectedB} && ${expectedA}`
         );
     }
-}    
+
+    // make one version for both clones and call separately
+}
+
 
 function main() {
     typeTests();
