@@ -45,3 +45,13 @@ Mutar.isTypeOf(regularArray, Uint32Array);  // -> false
 Let's now take a look at the fun part: the modification.
 
 ### Modification
+```js
+const Uint32 = new Uint32Array([400]);
+
+// easy start: create a copy (clone) of a TypedArray
+// (changes on the clone will not effect the original)
+const clone = Mutar.clone(Uint32);
+
+
+
+```
