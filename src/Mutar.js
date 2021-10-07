@@ -42,18 +42,16 @@ const littleEndian = (() => {
 
 class Mutar {
     /*
-        Main class. It is both toolkit to interact with typed arrays and 
+        Mutar is both toolkit to interact with typed arrays and 
         "modify" them and a constructor of a special object. Or  let's
         say a kit to emulate modification. In Fact each time a  new array
         is created. 
         This comes to a price of course. Each time the array "changes",
-        a new array is allocated in memory. This program is simply not
-        suitable to handle big amounts of data. "Big amount" is relative, 
-        but lets say if your program is using a lot of the available memory,
-        you should consider other solutions.
-        If this is not the case, this is a very convenient way to handle
-        binary data. If constructed, the array behaves pretty much as a 
-        regular array. You can concatenate, pop, shift, unshift...
+        a new array is allocated in memory. Keep that in mind when using
+        it.
+        Mutar objects and tools on the other hand are a very convenient way 
+        to handle binary data. If constructed, the array behaves pretty 
+        much as a regular array. You can concatenate, pop, shift, unshift...
         On top of that the type can be changed from - let's say - Uint8 to 
         Float64. Also zero padding can get trimmed. 
     */
@@ -146,6 +144,8 @@ class Mutar {
 
     static isTypeOf(obj, type) {
         // Test if array is of type xy
+        
+        type = Mutar.typeFromInput(type);
         return obj.constructor.name === type;
     }
 
