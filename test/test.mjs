@@ -281,12 +281,49 @@ function objTests() {
             expectedI
         );
     }
-
 }
+
+function cloneForeign() {
+    // Clone a foreign Uint8Array
+    // expect: - Same values on clone as on original, 
+    //         - modification should not impact original
+
+
+    const unit = "cloneForeign";
+    makeUnit(unit);
+    
+    result.tests++;
+    result.units[unit].tests++;
+    
+    const inputA = "Molly";
+    const expectedA = inputA;
+    const inputArr = new TextEncoder().encode(expectedA);
+    const decoder = new TextDecoder()
+    const clone = Mutar.clone(inputArr);
+
+    const outputA = decoder.decode(clone);
+    const subTest = (outputA === expectedA);
+    
+    clone[0] = 68;
+    const expectedB = "Dolly";
+    const outputB = decoder.decode(clone);
+    const outputC = decoder.decode(inputArr);
+
+    if (!(subTest && outputB === expectedB && outputC === expectedA)) {
+        makeError(
+            unit,
+            "staticClone",
+            `Mutar.clone(new TextEncoder().encode('${inputA}'))`,
+            `${outputA} && ${outputB} && ${outputC}`,
+            `${expectedA} && ${expectedB} && ${expectedA}`
+        );
+    }
+}    
 
 function main() {
     typeTests();
     objTests();
+    cloneForeign();
     
     console.log("results");
 
