@@ -293,12 +293,17 @@ class Mutar {
         return newArray;
     }
 
-    static pushTo(obj, b) {
+    static pushTo(obj, b, littleEndian=SYS_LITTLE_ENDIAN) {
         // Pushes one byte to the end of a given array.
+        
+        const type = obj.constructor.name;
+        const newArray = new Utils.ArrayTypes[type](obj.length + 1);
+        const view = new DataView(newArray.buffer);
+        const method = Utils.ViewMethods[type].set;
 
-        const newArray = new Utils.ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj);
-        newArray[obj.length] = b;
+        view[method]((obj.length * obj.BYTES_PER_ELEMENT), b, littleEndian);
+        
         return newArray;
     }
 
@@ -310,13 +315,18 @@ class Mutar {
         return [obj.slice(0, -1), obj.at(-1)];
     }
 
-    static unshiftTo(obj, b) {
+    static unshiftTo(obj, b, littleEndian=SYS_LITTLE_ENDIAN) {
         // Unshifts one byte ro a given array.
 
-        const newArray = new Utils.ArrayTypes[obj.constructor.name](obj.length + 1);
+        const type = obj.constructor.name;
+        const newArray = new Utils.ArrayTypes[type](obj.length + 1);
+        const view = new DataView(newArray.buffer);
+        const method = Utils.ViewMethods[type].set;
+
         newArray.set(obj, 1);
-        newArray[0] = b;
-        return newArray;
+        view[method](0, b, littleEndian);
+        
+        return newArray;    
     }
 
     static shiftFrom(obj) {
@@ -438,8 +448,12 @@ class Mutar {
         // returns a clone of the current obj
         obj.clone = () => new Mutar(obj.array.slice());
 
-        obj.push = (b) => {
-            obj.arraySetter = Mutar.pushTo(obj.array, b);
+        obj.push = (b, littleEndian=null) => {
+            if (littleEndian === null) {
+                // eslint-disable-next-line prefer-destructuring
+                littleEndian = obj.littleEndian;
+            }
+            obj.arraySetter = Mutar.pushTo(obj.array, b, littleEndian);
             return obj.array.at(-1);
         };
 
@@ -449,8 +463,12 @@ class Mutar {
             return popped;
         };
 
-        obj.unshift = (b) => {
-            obj.arraySetter = Mutar.unshiftTo(obj.array, b);
+        obj.unshift = (b, littleEndian=null) => {
+            if (littleEndian === null) {
+                // eslint-disable-next-line prefer-destructuring
+                littleEndian = obj.littleEndian;
+            }
+            obj.arraySetter = Mutar.unshiftTo(obj.array, b, littleEndian);
             return obj.array[0];
         };
 
