@@ -6,39 +6,45 @@
  * @license GPL-3.0
  */
  
+const Utils = {
+    getSysEndianness: () => {
+        /* 
+            Test endianness:
+            Uint16Array: Uint16Array(1) [ 1 ]
+            Binary:       [00000000 00000001]
+            Uint8 (b.end.)              [0 1]
+            Uint8 (l.end.)              [1 0]
 
-// Object which contains all possible TypedArrays
-// and it's constructor
+            Looking at index 0 shows 0 for
+            big endian and 1 for little endian
+        */
 
-const ArrayTypes = {
-    Int8Array: Int8Array,
-    Uint8Array: Uint8Array,
-    Uint8ClampedArray: Uint8ClampedArray,
-    Int16Array: Int16Array,
-    Uint16Array: Uint16Array,
-    Int32Array: Int32Array,
-    Uint32Array: Uint32Array,
-    Float32Array: Float32Array,
-    Float64Array: Float64Array,
-    BigInt64Array: BigInt64Array,
-    BigUint64Array: BigUint64Array
+        const testInt = new Uint16Array([1]);
+        const byteRepresentation = new Uint8Array(testInt.buffer);
+        return Boolean(byteRepresentation[0]);
+    },
+
+    ArrayTypes: {
+        /*
+            Object which contains all possible TypedArrays
+            and it's constructor
+        */
+
+        Int8Array: Int8Array,
+        Uint8Array: Uint8Array,
+        Uint8ClampedArray: Uint8ClampedArray,
+        Int16Array: Int16Array,
+        Uint16Array: Uint16Array,
+        Int32Array: Int32Array,
+        Uint32Array: Uint32Array,
+        Float32Array: Float32Array,
+        Float64Array: Float64Array,
+        BigInt64Array: BigInt64Array,
+        BigUint64Array: BigUint64Array
+    }
 }
 
-// Test endianness:
-// Uint16Array: Uint16Array(1) [ 1 ]
-// Binary:       [00000000 00000001]
-// Uint8 (b.end.)              [0 1]
-// Uint8 (l.end.)              [1 0]
-
-// Looking at index 0 shows 0 for
-// big endian and 1 for little endian
-
-const littleEndian = (() => {  
-    const testInt = new Uint16Array([1]);
-    const byteRepresentation = new Uint8Array(testInt.buffer);
-    return Boolean(byteRepresentation[0]);
-})();
-
+const SYS_LITTLE_ENDIAN = Utils.getSysEndianness();
 
 class Mutar {
     /*
@@ -56,7 +62,7 @@ class Mutar {
         Float64. Also zero padding can get trimmed. 
     */
 
-    constructor(input, type) {
+    constructor(input, type, littleEndian=SYS_LITTLE_ENDIAN) {
         /*
             Creates a special object. The actual array is locate
             at obj.array, all methods are available at top level.
@@ -78,8 +84,12 @@ class Mutar {
                 this.view = new DataView(val.buffer);
                 this.BYTES_PER_ELEMENT = val.BYTES_PER_ELEMENT;
             },
+            get SYS_LITTLE_ENDIAN() {
+                return SYS_LITTLE_ENDIAN;
+            },
             type: null,
             typeConstructor: null,
+            littleEndian: littleEndian
         }
 
         // Strings are automatically converted to a Uint8Array.
@@ -92,7 +102,7 @@ class Mutar {
         if (ArrayBuffer.isView(input)) {
             MutarObj.arraySetter = input;
             MutarObj.type = input.constructor.name;
-            MutarObj.typeConstructor = ArrayTypes[input.constructor.name];
+            MutarObj.typeConstructor = Utils.ArrayTypes[input.constructor.name];
         
         // If not the type must be specified and a new typed
         // array gets constructed based on the given information.
@@ -101,7 +111,7 @@ class Mutar {
             if (type) {
                 type = Mutar.typeFromInput(type);
                 MutarObj.type = type;
-                MutarObj.typeConstructor = ArrayTypes[type];
+                MutarObj.typeConstructor = Utils.ArrayTypes[type];
                 if (input instanceof ArrayBuffer || Array.isArray(input)) {
                     MutarObj.arraySetter = new MutarObj.typeConstructor(input);
                     error = false;
@@ -126,7 +136,7 @@ class Mutar {
         if (typeof(type) === "function") {
             type = type.name;
         }
-        if (!(type in ArrayTypes)) {
+        if (!(type in Utils.ArrayTypes)) {
             throw new TypeError(`Unknown type: ${type}`);
         }
         return type;
@@ -139,7 +149,7 @@ class Mutar {
     
     static isTypedArray(obj) {
         // Test if object is a typed array
-        return obj.constructor.name in ArrayTypes;
+        return obj.constructor.name in Utils.ArrayTypes;
     }
 
     static isTypeOf(obj, type) {
@@ -161,13 +171,13 @@ class Mutar {
         if (objA.constructor.name !== objB.constructor.name) {
             throw new TypeError(`You are trying to concatenate two different types of arrays ('${objA.constructor.name}' and '${objB.constructor.name}')\nThis can only be done by converting them into the same type first.`);
         }
-        const newArray = new ArrayTypes[objA.constructor.name](objA.length + objB.length);
+        const newArray = new Utils.ArrayTypes[objA.constructor.name](objA.length + objB.length);
         newArray.set(objA);
         newArray.set(objB, objA.length);
         return newArray;
     }
 
-    static convert(obj, type, trim=false, view=null) {
+    static convert(obj, type, trim=false, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
         // Converts a given TypedArray to another type.
         // If the new type has less bytes grouped, it is
         // Possible to trim leftover zero padding. If a
@@ -175,17 +185,19 @@ class Mutar {
 
         type = Mutar.typeFromInput(type);
         const byteLen = obj.byteLength;
-        const byteDiff = byteLen % ArrayTypes[type].BYTES_PER_ELEMENT;
+        const byteDiff = byteLen % Utils.ArrayTypes[type].BYTES_PER_ELEMENT;
         
         let newArray;
 
         if (!byteDiff) {
             // zero padding is not needed and can get trimmed in some cases
-            newArray = new ArrayTypes[type](obj.buffer);
-            if (trim) newArray = Mutar.trim(newArray);
+            newArray = new Utils.ArrayTypes[type](obj.buffer);
+            if (trim) {
+                newArray = Mutar.trim(newArray, littleEndian);
+            }
         } else {
             // zero padding is necessary
-            const missingBytes = ArrayTypes[type].BYTES_PER_ELEMENT - byteDiff;
+            const missingBytes = Utils.ArrayTypes[type].BYTES_PER_ELEMENT - byteDiff;
             const newLen = byteLen + missingBytes;
             if (!view) view = new DataView(obj.buffer);
             
@@ -201,7 +213,7 @@ class Mutar {
             for (let i=0, l=obj.byteLength; i<l; i++) {
                 Uint8[i+start] = view.getUint8(i, littleEndian);
             }
-            newArray = new ArrayTypes[type](Uint8.buffer);
+            newArray = new Utils.ArrayTypes[type](Uint8.buffer);
         }
 
         return newArray;
@@ -210,7 +222,7 @@ class Mutar {
     static pushTo(obj, b) {
         // Pushes one byte to the end of a given array.
 
-        const newArray = new ArrayTypes[obj.constructor.name](obj.length + 1);
+        const newArray = new Utils.ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj);
         newArray[obj.length] = b;
         return newArray;
@@ -227,7 +239,7 @@ class Mutar {
     static unshiftTo(obj, b) {
         // Unshifts one byte ro a given array.
 
-        const newArray = new ArrayTypes[obj.constructor.name](obj.length + 1);
+        const newArray = new Utils.ArrayTypes[obj.constructor.name](obj.length + 1);
         newArray.set(obj, 1);
         newArray[0] = b;
         return newArray;
@@ -241,7 +253,7 @@ class Mutar {
         return [obj.slice(1), obj.at(0)];
     }
 
-    static trim(obj) {
+    static trim(obj, littleEndian=SYS_LITTLE_ENDIAN) {
         // Trims null bytes from the given array and returns 
         // a new array. Only padded zeros are getting removed
         // according to the endianness.
@@ -316,7 +328,7 @@ class Mutar {
         // Only construct a new array if changes are possible
         if (start > 0 || end < absEnd) {
             singleBytesView = singleBytesView.slice(start, end+1);
-            obj = new ArrayTypes[type](singleBytesView.buffer);
+            obj = new Utils.ArrayTypes[type](singleBytesView.buffer);
         }
         return obj;
     }
@@ -338,11 +350,15 @@ class Mutar {
         // concat and set the array to the concatenated array.
         obj.conset = (arr) => obj.arraySetter = obj.concat(arr).array;
 
-        obj.convert = (type, trim=false) => {
+        obj.convert = (type, trim=false, littleEndian=null) => {
             type = Mutar.typeFromInput(type);
-            obj.arraySetter = Mutar.convert(obj, type, trim, obj.view);
+            if (littleEndian === null) {
+                // eslint-disable-next-line prefer-destructuring
+                littleEndian = obj.littleEndian;
+            }
+            obj.arraySetter = Mutar.convert(obj, type, trim, littleEndian, obj.view);
             obj.type = type;
-            obj.typeConstructor = ArrayTypes[type];
+            obj.typeConstructor = Utils.ArrayTypes[type];
         }
 
         // returns a clone of the current obj
@@ -370,7 +386,13 @@ class Mutar {
             return shifted;
         };
 
-        obj.trim = () => obj.arraySetter = Mutar.trim(obj.array);
+        obj.trim = (littleEndian=null) => {
+            if (littleEndian === null) {
+                // eslint-disable-next-line prefer-destructuring
+                littleEndian = obj.littleEndian;
+            }
+            obj.arraySetter = Mutar.trim(obj.array, littleEndian);
+        }
 
         // make build in methods accessible at top level
         obj.at = (...args) => obj.array.at(...args);
