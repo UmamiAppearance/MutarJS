@@ -235,11 +235,12 @@ class Mutar {
 
         if (objA.constructor.name !== objB.constructor.name) {
             if (args.includes("force")) {
-                //
+                const trim = args.includes("trim");
+                objB = Mutar.convert(objB, objA.constructor.name, trim);
             } else {
                 throw new TypeError(`
-                    You are trying to concatenate two different types of arrays
-                    ('${objA.constructor.name}' and '${objB.constructor.name}').
+                    You are trying to concatenate two different types of arrays:
+                    > '${objA.constructor.name}' and '${objB.constructor.name}' <
                     You can force this, by passing the string "force" to the function call.
                 `.replace(/ +/ug, " "));
             }
