@@ -41,6 +41,67 @@ const Utils = {
         Float64Array: Float64Array,
         BigInt64Array: BigInt64Array,
         BigUint64Array: BigUint64Array
+    },
+
+    ArrayShortCuts: {
+        Int8: "Int8Array",
+        Uint8: "Uint8Array",
+        Uint8Clamped: "Uint8ClampedArray",
+        Int16: "Int16Array",
+        Uint16: "Uint16Array",
+        Int32: "Int32Array",
+        Uint32: "Uint32Array",
+        Float32: "Float32Array",
+        Float64: "Float64Array",
+        BigInt64: "BigInt64Array",
+        BigUint64: "BigUint64Array"
+    },
+
+    ViewMethods: {
+        Int8Array: {
+            get: "getInt8",
+            set: "setInt8"
+        },
+        Uint8Array: {
+            get: "getUint8",
+            set: "setUint8"
+        },
+        Uint8ClampedArray: {
+            get: "getUint8",
+            set: "setUint8"
+        },  
+        Int16Array: {
+            get: "getInt16",
+            set: "setInt16"
+        },
+        Uint16Array: {
+            get: "getUint16",
+            set: "setUint16",
+        },
+        Int32Array: {
+            get: "getInt32",
+            set: "setInt32"
+        },
+        Uint32Array: {
+            get: "getUint32",
+            set: "setUint32"
+        },
+        Float32Array: {
+            get: "getFloat32",
+            set: "setFloat32"
+        },
+        Float64Array: {
+            get: "getFloat64",
+            set: "setFloat64"
+        },
+        BigInt64Array: {
+            get: "getBigInt64",
+            set: "setBigInt64"
+        },
+        BigUint64Array: {
+            get: "getBigUint64",
+            set: "setBigUint64"
+        }
     }
 }
 
@@ -137,7 +198,11 @@ class Mutar {
             type = type.name;
         }
         if (!(type in Utils.ArrayTypes)) {
-            throw new TypeError(`Unknown type: ${type}`);
+            if (type in Utils.ArrayShortCuts) {
+                type = Utils.ArrayShortCuts[type];
+            } else {
+                throw new TypeError(`Unknown type: ${type}`);
+            }
         }
         return type;
     }
@@ -164,12 +229,20 @@ class Mutar {
         return obj.slice();
     }
 
-    static concat(objA, objB) {
+    static concat(objA, objB, ...args) {
         // Concatenates two typed array and returns
         // a combined array.
 
         if (objA.constructor.name !== objB.constructor.name) {
-            throw new TypeError(`You are trying to concatenate two different types of arrays ('${objA.constructor.name}' and '${objB.constructor.name}')\nThis can only be done by converting them into the same type first.`);
+            if (args.includes("force")) {
+                //
+            } else {
+                throw new TypeError(`
+                    You are trying to concatenate two different types of arrays
+                    ('${objA.constructor.name}' and '${objB.constructor.name}').
+                    You can force this, by passing the string "force" to the function call.
+                `.replace(/ +/ug, " "));
+            }
         }
         const newArray = new Utils.ArrayTypes[objA.constructor.name](objA.length + objB.length);
         newArray.set(objA);
