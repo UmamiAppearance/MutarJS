@@ -35,8 +35,8 @@ Mutar.isTypeOf(Uint32, "Uint32Array");      // -> true
 // you can also use the Uint32 constructor as input
 Mutar.isTypeOf(Uint32, Uint32Array);        // -> true
 
-// test for Int8Array
-Mutar.isTypeOf(Uint32, Int8Array);          // -> false
+// test for Int8Array (this time a shortcut for the type)
+Mutar.isTypeOf(Uint32, "Int8");             // -> false
 
 // test the "wrong" type
 Mutar.isTypeOf(regularArray, Uint32Array);  // -> false
@@ -52,6 +52,7 @@ const Uint32 = new Uint32Array([400]);
 // (changes on the clone will not effect the original)
 const clone = Mutar.clone(Uint32);
 
-
+// converting (e.g. BigInt64)
+const BigInt = convert(Uint32, "BigInt"); 
 
 ```

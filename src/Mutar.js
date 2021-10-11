@@ -46,15 +46,15 @@ const Utils = {
     ArrayShortCuts: {
         Int8: "Int8Array",
         Uint8: "Uint8Array",
-        Uint8Clamped: "Uint8ClampedArray",
+        Clamped: "Uint8ClampedArray",
         Int16: "Int16Array",
         Uint16: "Uint16Array",
         Int32: "Int32Array",
         Uint32: "Uint32Array",
         Float32: "Float32Array",
         Float64: "Float64Array",
-        BigInt64: "BigInt64Array",
-        BigUint64: "BigUint64Array"
+        BigInt: "BigInt64Array",
+        BigUint: "BigUint64Array"
     },
 
     ViewMethods: {
@@ -264,7 +264,7 @@ class Mutar {
         let newArray;
 
         if (!byteDiff) {
-            // zero padding is not needed and can get trimmed in some cases
+            // zero padding is not needed, zeros can get trimmed in some cases
             newArray = new Utils.ArrayTypes[type](obj.buffer);
             if (trim) {
                 newArray = Mutar.trim(newArray, littleEndian);
