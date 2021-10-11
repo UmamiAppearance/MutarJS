@@ -293,6 +293,29 @@ class Mutar {
         return newArray;
     }
 
+    static detachFrom(obj, index) {
+        // Returns a new TypedArray from the given obj,
+        // the element of the given index is not included
+        // and also returned.
+        
+        const lastIndex = obj.length-1;
+        if (index > lastIndex) {
+            throw new RangeError(`The provided index is out of range (gt ${lastIndex})`);
+        }
+        if (index < 0) {
+            index += lastIndex + 1;
+            if (index < 0) {
+                throw new RangeError(`The provided index is out of range (lt ${-1-lastIndex})`);
+            }
+        }
+        const detached = obj[index];
+        let newArray, popped;
+        [newArray, popped] = Mutar.popFrom(obj);
+        newArray.copyWithin(index, index+1);
+        newArray[lastIndex-1] = popped;
+        return [newArray, detached];
+    }
+
     static pushTo(obj, b, littleEndian=SYS_LITTLE_ENDIAN) {
         // Pushes one byte to the end of a given array.
         
