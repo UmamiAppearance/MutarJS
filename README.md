@@ -52,6 +52,10 @@ const Uint32 = new Uint32Array([400]);
 // (changes on the clone will not effect the original)
 const clone = Mutar.clone(Uint32);
 
+// concatenation of arrays (let's join the original and the clone)
+const concat = Mutar.concat(Uint32, clone);
+
+
 // converting (e.g. BigInt64)
 const BigInt = convert(Uint32, "BigInt"); 
 
