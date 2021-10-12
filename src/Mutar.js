@@ -293,7 +293,9 @@ class Mutar {
         let newArray, popped;
         [newArray, popped] = Mutar.popFrom(obj);
         newArray.copyWithin(index, index+1);
-        newArray[lastIndex-1] = popped;
+        if (index < lastIndex) {
+            newArray[lastIndex-1] = popped;
+        }
         return [newArray, detached];
     }
 
