@@ -134,24 +134,7 @@ class Mutar {
             @type: A string that needs to be specified for buffer and regular arrayS
         */
 
-        // The actual object, which is returned after construction.
-        const MutarObj = {
-            set arraySetter(val) {
-                this.array = val;
-                this.buffer = val.buffer;
-                this.byteLength = val.byteLength;
-                this.byteOffset = val.byteOffset;
-                this.length = val.length;
-                this.view = new DataView(val.buffer);
-                this.BYTES_PER_ELEMENT = val.BYTES_PER_ELEMENT;
-            },
-            get SYS_LITTLE_ENDIAN() {
-                return SYS_LITTLE_ENDIAN;
-            },
-            type: null,
-            typeConstructor: null,
-            littleEndian: littleEndian
-        }
+        this.littleEndian = littleEndian;
 
         // Strings are automatically converted to a Uint8Array.
         if (typeof(input) === "string") {
@@ -161,9 +144,9 @@ class Mutar {
         // If the input is a TypedArray all information can
         // get read from that object.
         if (ArrayBuffer.isView(input)) {
-            MutarObj.arraySetter = input;
-            MutarObj.type = input.constructor.name;
-            MutarObj.typeConstructor = Utils.ArrayTypes[input.constructor.name];
+            this.arraySetter = input;
+            this.type = input.constructor.name;
+            this.typeConstructor = Utils.ArrayTypes[input.constructor.name];
         
         // If not the type must be specified and a new typed
         // array gets constructed based on the given information.
@@ -171,20 +154,17 @@ class Mutar {
             let error = true;
             if (type) {
                 type = Mutar.typeFromInput(type);
-                MutarObj.type = type;
-                MutarObj.typeConstructor = Utils.ArrayTypes[type];
+                this.type = type;
+                this.typeConstructor = Utils.ArrayTypes[type];
                 if (input instanceof ArrayBuffer || Array.isArray(input)) {
-                    MutarObj.arraySetter = new MutarObj.typeConstructor(input);
+                    this.arraySetter = new this.typeConstructor(input);
                     error = false;
                 }
             }
             if (error) throw new TypeError("For Array and ArrayBuffer the type needs to be specified as a second argument.");
         }
 
-        // Append all methods for interaction
-        this.appendMethods(MutarObj);
-        
-        return MutarObj;
+        this.makeAccessibleFromRoot();
     }
 
     
@@ -446,95 +426,111 @@ class Mutar {
     // by the constructor. The obj methods are using 
     // the static methods
 
-    appendMethods(obj) {
+    set arraySetter(val) {
+        this.array = val;
+        this.buffer = val.buffer;
+        this.byteLength = val.byteLength;
+        this.byteOffset = val.byteOffset;
+        this.length = val.length;
+        this.view = new DataView(val.buffer);
+        this.BYTES_PER_ELEMENT = val.BYTES_PER_ELEMENT;
+    }
 
-        obj.extractArrayClone = () => obj.array.slice();
+    get SYS_LITTLE_ENDIAN() {
+        return SYS_LITTLE_ENDIAN;
+    }
 
-        obj.concat = (arr) => {
-            const array = Mutar.concat(obj.array, arr);
-            return new Mutar(array);
-        };
+    extractArrayClone() {
+        return this.array.slice();
+    }
+    
+    concat(arr) {
+        const array = this.constructor.concat(this.array, arr);
+        return new Mutar(array);
+    }
 
+    conset(arr) {
         // concat and set the array to the concatenated array.
-        obj.conset = (arr) => obj.arraySetter = obj.concat(arr).array;
+        this.arraySetter = this.concat(arr).array;
+    } 
 
-        obj.convert = (type, trim=false, littleEndian=null) => {
-            type = Mutar.typeFromInput(type);
-            if (littleEndian === null) {
-                // eslint-disable-next-line prefer-destructuring
-                littleEndian = obj.littleEndian;
-            }
-            obj.arraySetter = Mutar.convert(obj, type, trim, littleEndian, obj.view);
-            obj.type = type;
-            obj.typeConstructor = Utils.ArrayTypes[type];
+    convert(type, trim=false, littleEndian=null) {
+        type = this.constructor.typeFromInput(type);
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
         }
+        this.arraySetter = this.constructor.convert(this, type, trim, littleEndian, this.view);
+        this.type = type;
+        this.typeConstructor = Utils.ArrayTypes[type];
+    }
 
+    clone() {
         // returns a clone of the current obj
-        obj.clone = () => new Mutar(obj.array.slice());
+        return new Mutar(this.array.slice());
+    }
 
-        obj.push = (b, littleEndian=null) => {
-            if (littleEndian === null) {
-                // eslint-disable-next-line prefer-destructuring
-                littleEndian = obj.littleEndian;
-            }
-            obj.arraySetter = Mutar.pushTo(obj.array, b, littleEndian);
-            return obj.array.at(-1);
-        };
-
-        obj.pop = () => {
-            let popped;
-            [obj.arraySetter, popped] = Mutar.popFrom(obj.array);
-            return popped;
-        };
-
-        obj.unshift = (b, littleEndian=null) => {
-            if (littleEndian === null) {
-                // eslint-disable-next-line prefer-destructuring
-                littleEndian = obj.littleEndian;
-            }
-            obj.arraySetter = Mutar.unshiftTo(obj.array, b, littleEndian);
-            return obj.array[0];
-        };
-
-        obj.shift = () => {
-            let shifted;
-            [obj.arraySetter, shifted] = Mutar.shiftFrom(obj.array);
-            return shifted;
-        };
-
-        obj.trim = (littleEndian=null) => {
-            if (littleEndian === null) {
-                // eslint-disable-next-line prefer-destructuring
-                littleEndian = obj.littleEndian;
-            }
-            obj.arraySetter = Mutar.trim(obj.array, littleEndian);
+    push(b, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
         }
+        this.arraySetter = this.constructor.pushTo(this.array, b, littleEndian);
+        return this.array.at(-1);
+    }
 
+    pop() {
+        let popped;
+        [this.arraySetter, popped] = this.constructor.popFrom(this.array);
+        return popped;
+    }
+
+    unshift(b, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+        this.arraySetter = this.constructor.unshiftTo(this.array, b, littleEndian);
+        return this.array[0];
+    }
+
+    shift() {
+        let shifted;
+        [this.arraySetter, shifted] = this.constructor.shiftFrom(this.array);
+        return shifted;
+    }
+
+    trim(littleEndian=null) {
+        if (littleEndian === null) {
+            // eslint-disable-next-line prefer-destructuring
+            littleEndian = this.littleEndian;
+        }
+        this.arraySetter = this.constructor.trim(this.array, littleEndian);
+    }
+
+    makeAccessibleFromRoot() {
         // make build in methods accessible at top level
-        obj.at = (...args) => obj.array.at(...args);
-        obj.copyWithin = (...args) => obj.array.copyWithin(...args);
-        obj.entries = (...args) => obj.array.entries(...args);
-        obj.every = (...args) => obj.array.every(...args);
-        obj.fill = (...args) => obj.array.fill(...args);
-        obj.filter = (...args) => obj.array.filter(...args);
-        obj.find = (...args) => obj.array.find(...args);
-        obj.findIndex = (...args) => obj.array.findIndex(...args);
-        obj.forEach = (...args) => obj.array.forEach(...args);
-        obj.includes = (...args) => obj.array.includes(...args);
-        obj.indexOf = (...args) => obj.array.indexOf(...args);
-        obj.join = (...args) => obj.array.join(...args);
-        obj.keys = (...args) => obj.array.keys(...args);
-        obj.lastIndexOf = (...args) => obj.array.lastIndexOf(...args);
-        obj.map = (...args) => obj.array.map(...args);
-        obj.reduce = (...args) => obj.array.reduce(...args);
-        obj.reduceRight = (...args) => obj.array.reduceRight(...args);
-        obj.reverse = (...args) => obj.array.reverse(...args);
-        obj.set = (...args) => obj.array.set(...args);
-        obj.slice = (...args) => obj.array.slice(...args);
-        obj.some = (...args) => obj.array.some(...args);
-        obj.sort = (...args) => obj.array.sort(...args);
-        obj.subarray = (...args) => obj.array.subarray(...args);
-        obj.values = (...args) => obj.array.values(...args);
+        this.at = (...args) => this.array.at(...args);
+        this.copyWithin = (...args) => this.array.copyWithin(...args);
+        this.entries = (...args) => this.array.entries(...args);
+        this.every = (...args) => this.array.every(...args);
+        this.fill = (...args) => this.array.fill(...args);
+        this.filter = (...args) => this.array.filter(...args);
+        this.find = (...args) => this.array.find(...args);
+        this.findIndex = (...args) => this.array.findIndex(...args);
+        this.forEach = (...args) => this.array.forEach(...args);
+        this.includes = (...args) => this.array.includes(...args);
+        this.indexOf = (...args) => this.array.indexOf(...args);
+        this.join = (...args) => this.array.join(...args);
+        this.keys = (...args) => this.array.keys(...args);
+        this.lastIndexOf = (...args) => this.array.lastIndexOf(...args);
+        this.map = (...args) => this.array.map(...args);
+        this.reduce = (...args) => this.array.reduce(...args);
+        this.reduceRight = (...args) => this.array.reduceRight(...args);
+        this.reverse = (...args) => this.array.reverse(...args);
+        this.set = (...args) => this.array.set(...args);
+        this.slice = (...args) => this.array.slice(...args);
+        this.some = (...args) => this.array.some(...args);
+        this.sort = (...args) => this.array.sort(...args);
+        this.subarray = (...args) => this.array.subarray(...args);
+        this.values = (...args) => this.array.values(...args);
     }
 }
 
