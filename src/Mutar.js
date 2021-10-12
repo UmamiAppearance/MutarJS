@@ -209,26 +209,53 @@ class Mutar {
         return obj.slice();
     }
 
-    static concat(objA, objB, ...args) {
-        // TODO: make it possible to add multiple objects
-        // Concatenates two typed array and returns
-        // a combined array.
-
-        if (objA.constructor.name !== objB.constructor.name) {
-            if (args.includes("force")) {
-                const trim = args.includes("trim");
-                objB = Mutar.convert(objB, objA.constructor.name, trim);
-            } else {
-                throw new TypeError(`
-                    You are trying to concatenate two different types of arrays:
-                    > '${objA.constructor.name}' and '${objB.constructor.name}' <
-                    You can force this, by passing the string "force" to the function call.
-                `.replace(/ +/ug, " "));
+    static concat(obj, ...args) {
+        function argsIncludes(arg) {
+            if (args.includes(arg)) {
+                args.splice(args.indexOf(arg), 1);
+                return true;
             }
+            return false;
         }
-        const newArray = new Utils.ArrayTypes[objA.constructor.name](objA.length + objB.length);
-        newArray.set(objA);
-        newArray.set(objB, objA.length);
+
+        function throwTypeError(errorObj) {
+            throw new TypeError(`Your provided input is not a TypedArray: '${errorObj}' (${errorObj.constructor.name})`);
+        }
+
+        const force = argsIncludes("force");
+        const trim = argsIncludes("trim");
+
+        if (!Mutar.isTypedArray(obj)) {
+            throwTypeError(obj);
+        } else if (!args.length) {
+            return obj;
+        }
+
+        const type = obj.constructor.name;
+        let precursor = [...obj];
+
+        args.forEach((nextObj) => {
+            if (!Mutar.isTypedArray(nextObj)) {
+                throwTypeError(nextObj);
+            }
+
+            let next = nextObj; 
+            if (nextObj.constructor.name !== type) {
+                if (force) {
+                    next = Mutar.convert(nextObj, type, trim);
+                } else {
+                    throw new TypeError(`
+                        You are trying to concatenate different types of arrays:
+                        > '${type}' and '${nextObj.constructor.name}' <
+                        You can force this, by passing the string "force" to the function call.
+                    `.replace(/ +/ug, " "));
+                }
+            }
+            precursor = precursor.concat([...next]);
+        });
+        
+        const newArray = Utils.ArrayTypes[type].from(precursor);
+
         return newArray;
     }
 
