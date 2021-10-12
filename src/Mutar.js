@@ -5,7 +5,9 @@
  * @author UmamiAppearance [mail@umamiappearance.eu]
  * @license GPL-3.0
  */
- 
+
+/* eslint-disable prefer-destructuring */
+
 const Utils = {
     getSysEndianness: () => {
         /* 
