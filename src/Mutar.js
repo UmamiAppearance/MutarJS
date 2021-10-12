@@ -230,6 +230,7 @@ class Mutar {
     }
 
     static concat(objA, objB, ...args) {
+        // TODO: make it possible to add multiple objects
         // Concatenates two typed array and returns
         // a combined array.
 
@@ -297,7 +298,7 @@ class Mutar {
         // Returns a new TypedArray from the given obj,
         // the element of the given index is not included
         // and also returned.
-        
+
         const lastIndex = obj.length-1;
         if (index > lastIndex) {
             throw new RangeError(`The provided index is out of range (gt ${lastIndex})`);
