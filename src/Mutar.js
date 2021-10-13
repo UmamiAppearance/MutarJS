@@ -166,7 +166,31 @@ class Mutar {
             if (error) throw new TypeError("For Array and ArrayBuffer the type needs to be specified as a second argument.");
         }
 
-        this.makeAccessibleFromRoot();
+        // make build in methods accessible at top level
+        this.at = (...args) => this.array.at(...args);
+        this.copyWithin = (...args) => this.array.copyWithin(...args);
+        this.entries = (...args) => this.array.entries(...args);
+        this.every = (...args) => this.array.every(...args);
+        this.fill = (...args) => this.array.fill(...args);
+        this.filter = (...args) => this.array.filter(...args);
+        this.find = (...args) => this.array.find(...args);
+        this.findIndex = (...args) => this.array.findIndex(...args);
+        this.forEach = (...args) => this.array.forEach(...args);
+        this.includes = (...args) => this.array.includes(...args);
+        this.indexOf = (...args) => this.array.indexOf(...args);
+        this.join = (...args) => this.array.join(...args);
+        this.keys = (...args) => this.array.keys(...args);
+        this.lastIndexOf = (...args) => this.array.lastIndexOf(...args);
+        this.map = (...args) => this.array.map(...args);
+        this.reduce = (...args) => this.array.reduce(...args);
+        this.reduceRight = (...args) => this.array.reduceRight(...args);
+        this.reverse = (...args) => this.array.reverse(...args);
+        this.set = (...args) => this.array.set(...args);
+        this.slice = (...args) => this.array.slice(...args);
+        this.some = (...args) => this.array.some(...args);
+        this.sort = (...args) => this.array.sort(...args);
+        this.subarray = (...args) => this.array.subarray(...args);
+        this.values = (...args) => this.array.values(...args);
     }
 
     
@@ -536,40 +560,18 @@ class Mutar {
         return shifted;
     }
 
+    splice(...args) {
+        let spliced;
+        [this.arraySetter, spliced] = this.constructor.splice(this.array, ...args)
+        return spliced;
+    }
+
     trim(littleEndian=null) {
         if (littleEndian === null) {
             // eslint-disable-next-line prefer-destructuring
             littleEndian = this.littleEndian;
         }
         this.arraySetter = this.constructor.trim(this.array, littleEndian);
-    }
-
-    makeAccessibleFromRoot() {
-        // make build in methods accessible at top level
-        this.at = (...args) => this.array.at(...args);
-        this.copyWithin = (...args) => this.array.copyWithin(...args);
-        this.entries = (...args) => this.array.entries(...args);
-        this.every = (...args) => this.array.every(...args);
-        this.fill = (...args) => this.array.fill(...args);
-        this.filter = (...args) => this.array.filter(...args);
-        this.find = (...args) => this.array.find(...args);
-        this.findIndex = (...args) => this.array.findIndex(...args);
-        this.forEach = (...args) => this.array.forEach(...args);
-        this.includes = (...args) => this.array.includes(...args);
-        this.indexOf = (...args) => this.array.indexOf(...args);
-        this.join = (...args) => this.array.join(...args);
-        this.keys = (...args) => this.array.keys(...args);
-        this.lastIndexOf = (...args) => this.array.lastIndexOf(...args);
-        this.map = (...args) => this.array.map(...args);
-        this.reduce = (...args) => this.array.reduce(...args);
-        this.reduceRight = (...args) => this.array.reduceRight(...args);
-        this.reverse = (...args) => this.array.reverse(...args);
-        this.set = (...args) => this.array.set(...args);
-        this.slice = (...args) => this.array.slice(...args);
-        this.some = (...args) => this.array.some(...args);
-        this.sort = (...args) => this.array.sort(...args);
-        this.subarray = (...args) => this.array.subarray(...args);
-        this.values = (...args) => this.array.values(...args);
     }
 }
 
