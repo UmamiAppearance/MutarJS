@@ -372,6 +372,14 @@ class Mutar {
         return [obj.slice(1), obj.at(0)];
     }
 
+    static splice(obj, ...args) {
+        
+        const type = obj.constructor.name;
+        const precursor = [...obj];
+        const spliced = precursor.splice(...args);
+        return [Utils.ArrayTypes[type].from(precursor), spliced];
+    }
+
     static trim(obj, littleEndian=SYS_LITTLE_ENDIAN) {
         // Trims null bytes from the given array and returns 
         // a new array. Only padded zeros are getting removed
