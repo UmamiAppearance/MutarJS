@@ -396,12 +396,58 @@ class Mutar {
         return [obj.slice(1), obj.at(0)];
     }
 
-    static splice(obj, ...args) {
+    static splice(obj, start, deleteCount, ...items) {
         
         const type = obj.constructor.name;
-        const precursor = [...obj];
-        const spliced = precursor.splice(...args);
-        return [Utils.ArrayTypes[type].from(precursor), spliced];
+        const len = obj.length;
+
+        if (!Number.isInteger(start)) {
+            start = len;
+        } else if (start < 0) {
+            start = Math.max(len+start, 0);
+        }
+        start = Math.min(start, len);
+        
+        if (start === len) {
+            deleteCount = 0;
+        } else if (!Number.isInteger(deleteCount) || deleteCount >= len-start) {
+            deleteCount = len-start;
+        } else {
+            deleteCount = Math.max(deleteCount, 0);
+        }
+
+        let littleEndian = SYS_LITTLE_ENDIAN;
+        for (const bool of [false, true]) {
+            if (items.indexOf(bool) > -1) { 
+                items.splice(items.indexOf(bool), 1);
+                littleEndian = bool;
+            }
+        }
+
+        const end = start + deleteCount; 
+        
+        const startArray = obj.subarray(0, start);
+        const spliced = obj.slice(start, end);
+        const endArray = obj.subarray(end, len);
+
+        let newArray;
+        const method = Utils.ViewMethods[type].set;
+
+        if (items.length) {
+            const ins = new Utils.ArrayTypes[type](items.length);
+            const view = new DataView(ins.buffer);
+            let i = 0;
+            const step = ins.BYTES_PER_ELEMENT;
+            for (let j=0, l=ins.byteLength; j<l; j+=step) {
+                view[method](j, items[i], littleEndian);
+                i++;
+            }
+            newArray = Mutar.concat(startArray, ins, endArray);
+        } else {
+            newArray = Mutar.concat(startArray, endArray);
+        }
+
+        return [newArray, spliced];
     }
 
     static trim(obj, littleEndian=SYS_LITTLE_ENDIAN) {
@@ -561,6 +607,13 @@ class Mutar {
     }
 
     splice(...args) {
+        let addEndianness = true;
+        for (const bool of [false, true]) {
+            if (args.indexOf(bool) > -1) { 
+                addEndianness = false;
+            }
+        }
+        if (addEndianness) args.push(this.littleEndian);
         let spliced;
         [this.arraySetter, spliced] = this.constructor.splice(this.array, ...args)
         return spliced;
