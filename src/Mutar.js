@@ -327,7 +327,7 @@ class Mutar {
         return newArray;
     }
 
-    static detachFrom(obj, index) {
+    static detach(obj, index) {
         // Returns a new TypedArray from the given obj,
         // the element of the given index is not included
         // and also returned.
@@ -344,7 +344,7 @@ class Mutar {
         }
         const detached = obj[index];
         let newArray, popped;
-        [newArray, popped] = Mutar.popFrom(obj);
+        [newArray, popped] = Mutar.pop(obj);
         newArray.copyWithin(index, index+1);
         if (index < lastIndex) {
             newArray[lastIndex-1] = popped;
@@ -352,7 +352,14 @@ class Mutar {
         return [newArray, detached];
     }
 
-    static pushTo(obj, b, littleEndian=SYS_LITTLE_ENDIAN) {
+    static insert(obj, index, byte, littleEndian=SYS_LITTLE_ENDIAN) {
+        if (index < 0) {
+            index = Math.max(obj.length+index+1, 0);
+        }
+        return Mutar.splice(obj, index, 0, byte, littleEndian)[0];
+    }
+
+    static push(obj, b, littleEndian=SYS_LITTLE_ENDIAN) {
         // Pushes one byte to the end of a given array.
         
         const type = obj.constructor.name;
@@ -366,7 +373,7 @@ class Mutar {
         return newArray;
     }
 
-    static popFrom(obj) {
+    static pop(obj) {
         // Removes one byte from a given array.
         // Returns the new array and the removed
         // byte.
@@ -374,7 +381,7 @@ class Mutar {
         return [obj.slice(0, -1), obj.at(-1)];
     }
 
-    static unshiftTo(obj, b, littleEndian=SYS_LITTLE_ENDIAN) {
+    static unshift(obj, b, littleEndian=SYS_LITTLE_ENDIAN) {
         // Unshifts one byte ro a given array.
 
         const type = obj.constructor.name;
@@ -388,7 +395,7 @@ class Mutar {
         return newArray;    
     }
 
-    static shiftFrom(obj) {
+    static shift(obj) {
         // Shifts one byte from a given array
         // Returns the new array and the removed
         // byte.
@@ -530,6 +537,10 @@ class Mutar {
         return obj;
     }
 
+    static zeroPurge(obj) {
+        return obj.filter((b) => b !== 0);
+    }
+
 
     // Methods that are appended to the obj, called 
     // by the constructor. The obj methods are using 
@@ -582,13 +593,13 @@ class Mutar {
         if (littleEndian === null) {
             littleEndian = this.littleEndian;
         }
-        this.arraySetter = this.constructor.pushTo(this.array, b, littleEndian);
+        this.arraySetter = this.constructor.push(this.array, b, littleEndian);
         return this.array.at(-1);
     }
 
     pop() {
         let popped;
-        [this.arraySetter, popped] = this.constructor.popFrom(this.array);
+        [this.arraySetter, popped] = this.constructor.pop(this.array);
         return popped;
     }
 
@@ -596,13 +607,13 @@ class Mutar {
         if (littleEndian === null) {
             littleEndian = this.littleEndian;
         }
-        this.arraySetter = this.constructor.unshiftTo(this.array, b, littleEndian);
+        this.arraySetter = this.constructor.unshift(this.array, b, littleEndian);
         return this.array[0];
     }
 
     shift() {
         let shifted;
-        [this.arraySetter, shifted] = this.constructor.shiftFrom(this.array);
+        [this.arraySetter, shifted] = this.constructor.shift(this.array);
         return shifted;
     }
 
