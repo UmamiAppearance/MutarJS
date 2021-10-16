@@ -146,7 +146,7 @@ class Mutar {
         // If the input is a TypedArray all information can
         // get read from that object.
         if (ArrayBuffer.isView(input)) {
-            this.arraySetter = input;
+            this.essentials = input;
             this.type = input.constructor.name;
             this.typeConstructor = Utils.ArrayTypes[input.constructor.name];
         
@@ -159,7 +159,7 @@ class Mutar {
                 this.type = type;
                 this.typeConstructor = Utils.ArrayTypes[type];
                 if (input instanceof ArrayBuffer || Array.isArray(input)) {
-                    this.arraySetter = new this.typeConstructor(input);
+                    this.essentials = new this.typeConstructor(input);
                     error = false;
                 }
             }
@@ -356,6 +356,7 @@ class Mutar {
         if (index < 0) {
             index = Math.max(obj.length+index+1, 0);
         }
+        // TODO: retuen inserted val
         return Mutar.splice(obj, index, 0, byte, littleEndian)[0];
     }
 
@@ -546,7 +547,7 @@ class Mutar {
     // by the constructor. The obj methods are using 
     // the static methods
 
-    set arraySetter(val) {
+    set essentials(val) {
         this.array = val;
         this.buffer = val.buffer;
         this.byteLength = val.byteLength;
@@ -571,7 +572,7 @@ class Mutar {
 
     conset(arr) {
         // concat and set the array to the concatenated array.
-        this.arraySetter = this.concat(arr).array;
+        this.essentials = this.concat(arr).array;
     } 
 
     convert(type, trim=false, littleEndian=null) {
@@ -579,7 +580,7 @@ class Mutar {
         if (littleEndian === null) {
             littleEndian = this.littleEndian;
         }
-        this.arraySetter = this.constructor.convert(this, type, trim, littleEndian, this.view);
+        this.essentials = this.constructor.convert(this, type, trim, littleEndian, this.view);
         this.type = type;
         this.typeConstructor = Utils.ArrayTypes[type];
     }
@@ -589,17 +590,30 @@ class Mutar {
         return new Mutar(this.array.slice());
     }
 
+    detach(index) {
+        let detached;
+        [this.essentials, detached] = this.constructor.detach(this.array, index)[1];
+        return detached;
+    }
+
+    insert(index, byte, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+        this.essentials = this.constructor.insert(this.array, index, byte, this.littleEndian);
+    }
+
     push(b, littleEndian=null) {
         if (littleEndian === null) {
             littleEndian = this.littleEndian;
         }
-        this.arraySetter = this.constructor.push(this.array, b, littleEndian);
+        this.essentials = this.constructor.push(this.array, b, littleEndian);
         return this.array.at(-1);
     }
 
     pop() {
         let popped;
-        [this.arraySetter, popped] = this.constructor.pop(this.array);
+        [this.essentials, popped] = this.constructor.pop(this.array);
         return popped;
     }
 
@@ -607,13 +621,13 @@ class Mutar {
         if (littleEndian === null) {
             littleEndian = this.littleEndian;
         }
-        this.arraySetter = this.constructor.unshift(this.array, b, littleEndian);
+        this.essentials = this.constructor.unshift(this.array, b, littleEndian);
         return this.array[0];
     }
 
     shift() {
         let shifted;
-        [this.arraySetter, shifted] = this.constructor.shift(this.array);
+        [this.essentials, shifted] = this.constructor.shift(this.array);
         return shifted;
     }
 
@@ -626,7 +640,7 @@ class Mutar {
         }
         if (addEndianness) args.push(this.littleEndian);
         let spliced;
-        [this.arraySetter, spliced] = this.constructor.splice(this.array, ...args)
+        [this.essentials, spliced] = this.constructor.splice(this.array, ...args)
         return spliced;
     }
 
@@ -635,7 +649,11 @@ class Mutar {
             // eslint-disable-next-line prefer-destructuring
             littleEndian = this.littleEndian;
         }
-        this.arraySetter = this.constructor.trim(this.array, littleEndian);
+        this.essentials = this.constructor.trim(this.array, littleEndian);
+    }
+
+    zeroPurge() {
+        this.essentials = this.constructor.zeroPurge(this.array);
     }
 }
 
