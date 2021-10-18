@@ -29,7 +29,7 @@ const Utils = {
     ArrayTypes: {
         /*
             Object which contains all possible TypedArrays
-            and it's constructor
+            and the according constructors.
         */
 
         Int8Array: Int8Array,
@@ -112,7 +112,7 @@ const SYS_LITTLE_ENDIAN = Utils.getSysEndianness();
 class Mutar {
     /*
         Mutar is both toolkit to interact with typed arrays and 
-        "modify" them and a constructor of a special object. Or  let's
+        "modify" them and a constructor of a special object. Or  let"s
         say a kit to emulate modification. In Fact each time a  new array
         is created. 
         This comes to a price of course. Each time the array "changes",
@@ -121,7 +121,7 @@ class Mutar {
         Mutar objects and tools on the other hand are a very convenient way 
         to handle binary data. If constructed, the array behaves pretty 
         much as a regular array. You can concatenate, pop, shift, unshift...
-        On top of that the type can be changed from - let's say - Uint8 to 
+        On top of that the type can be changed from - let"s say - Uint8 to 
         Float64. Also zero padding can get trimmed. 
     */
 
@@ -146,7 +146,7 @@ class Mutar {
         // If the input is a TypedArray all information can
         // get read from that object.
         if (ArrayBuffer.isView(input)) {
-            this.essentials = input;
+            this.newArray = input;
             this.type = input.constructor.name;
             this.typeConstructor = Utils.ArrayTypes[input.constructor.name];
         
@@ -159,38 +159,12 @@ class Mutar {
                 this.type = type;
                 this.typeConstructor = Utils.ArrayTypes[type];
                 if (input instanceof ArrayBuffer || Array.isArray(input)) {
-                    this.essentials = new this.typeConstructor(input);
+                    this.newArray = new this.typeConstructor(input);
                     error = false;
                 }
             }
             if (error) throw new TypeError("For Array and ArrayBuffer the type needs to be specified as a second argument.");
         }
-
-        // make build in methods accessible at top level
-        this.at = (...args) => this.array.at(...args);
-        this.copyWithin = (...args) => this.array.copyWithin(...args);
-        this.entries = (...args) => this.array.entries(...args);
-        this.every = (...args) => this.array.every(...args);
-        this.fill = (...args) => this.array.fill(...args);
-        this.filter = (...args) => this.array.filter(...args);
-        this.find = (...args) => this.array.find(...args);
-        this.findIndex = (...args) => this.array.findIndex(...args);
-        this.forEach = (...args) => this.array.forEach(...args);
-        this.includes = (...args) => this.array.includes(...args);
-        this.indexOf = (...args) => this.array.indexOf(...args);
-        this.join = (...args) => this.array.join(...args);
-        this.keys = (...args) => this.array.keys(...args);
-        this.lastIndexOf = (...args) => this.array.lastIndexOf(...args);
-        this.map = (...args) => this.array.map(...args);
-        this.reduce = (...args) => this.array.reduce(...args);
-        this.reduceRight = (...args) => this.array.reduceRight(...args);
-        this.reverse = (...args) => this.array.reverse(...args);
-        this.set = (...args) => this.array.set(...args);
-        this.slice = (...args) => this.array.slice(...args);
-        this.some = (...args) => this.array.some(...args);
-        this.sort = (...args) => this.array.sort(...args);
-        this.subarray = (...args) => this.array.subarray(...args);
-        this.values = (...args) => this.array.values(...args);
     }
 
     
@@ -245,7 +219,7 @@ class Mutar {
         }
 
         function throwTypeError(errorObj) {
-            throw new TypeError(`Your provided input is not a TypedArray: '${errorObj}' (${errorObj.constructor.name})`);
+            throw new TypeError(`Your provided input is not a TypedArray: "${errorObj}" (${errorObj.constructor.name})`);
         }
 
         const force = argsIncludes("force");
@@ -272,7 +246,7 @@ class Mutar {
                 } else {
                     throw new TypeError(`
                         You are trying to concatenate different types of arrays:
-                        > '${type}' and '${nextObj.constructor.name}' <
+                        > "${type}" and "${nextObj.constructor.name}" <
                         You can force this, by passing the string "force" to the function call.
                     `.replace(/ +/ug, " "));
                 }
@@ -358,19 +332,11 @@ class Mutar {
         return [newArray, inserted];
     }
 
-    static push(obj, b, littleEndian=SYS_LITTLE_ENDIAN) {
-        // Pushes one byte to the end of a given array.
+    static push(obj, ...args) {
+        // Pushes values to the end of a given array.
         
-        const type = obj.constructor.name;
-        const newArray = new Utils.ArrayTypes[type](obj.length + 1);
-        const view = new DataView(newArray.buffer);
-        const method = Utils.ViewMethods[type].set;
-
-        newArray.set(obj);
-        const bytePos = obj.length * obj.BYTES_PER_ELEMENT;
-        view[method]((bytePos), b, littleEndian);
-        
-        return newArray;
+        const newArray = Mutar.splice(obj, obj.length, 0, ...args)[0];
+        return [newArray, newArray.length];
     }
 
     static pop(obj) {
@@ -381,18 +347,11 @@ class Mutar {
         return [obj.slice(0, -1), obj.at(-1)];
     }
 
-    static unshift(obj, b, littleEndian=SYS_LITTLE_ENDIAN) {
-        // Unshifts one byte ro a given array.
+    static unshift(obj, ...args) {
+        // Unshifts bytes to the beginning of a given array.
 
-        const type = obj.constructor.name;
-        const newArray = new Utils.ArrayTypes[type](obj.length + 1);
-        const view = new DataView(newArray.buffer);
-        const method = Utils.ViewMethods[type].set;
-
-        newArray.set(obj, 1);
-        view[method](0, b, littleEndian);
-        
-        return newArray;    
+        const newArray = Mutar.splice(obj, 0, 0, ...args)[0];
+        return [newArray, newArray.length];
     }
 
     static shift(obj) {
@@ -404,6 +363,7 @@ class Mutar {
     }
 
     static splice(obj, start, deleteCount, ...items) {
+        // TODO: describe me
         
         const type = obj.constructor.name;
         const len = obj.length;
@@ -424,10 +384,12 @@ class Mutar {
         }
 
         let littleEndian = SYS_LITTLE_ENDIAN;
-        for (const bool of [false, true]) {
-            if (items.indexOf(bool) > -1) { 
-                items.splice(items.indexOf(bool), 1);
-                littleEndian = bool;
+        if (items.length) {
+            for (const bool of [false, true]) {
+                if (items.indexOf(bool) > -1) { 
+                    items.splice(items.indexOf(bool), 1);
+                    littleEndian = bool;
+                }
             }
         }
 
@@ -463,9 +425,9 @@ class Mutar {
         // according to the endianness.
         //
         // Example:
-        // Integer '400',  binary '110010000'
+        // Integer "400",  binary "110010000"
         //
-        // As a Uint32Array:   'Uint32Array(1) [ 400 ]'
+        // As a Uint32Array:   "Uint32Array(1) [ 400 ]"
         //       -> [00000000000000000000000110010000]
         //
         // As a Uint8Array (big endian):
@@ -546,7 +508,10 @@ class Mutar {
     // by the constructor. The obj methods are using 
     // the static methods
 
-    set essentials(val) {
+    /**
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} val
+     */
+    set newArray(val) {
         this.array = val;
         this.buffer = val.buffer;
         this.byteLength = val.byteLength;
@@ -564,14 +529,20 @@ class Mutar {
         return this.array.slice();
     }
     
+    /**
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} arr
+     */
     concat(arr) {
         const array = this.constructor.concat(this.array, arr);
         return new Mutar(array);
     }
 
+    /**
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} arr
+     */
     conset(arr) {
         // concat and set the array to the concatenated array.
-        this.essentials = this.concat(arr).array;
+        this.newArray = this.concat(arr).array;
     } 
 
     convert(type, trim=false, littleEndian=null) {
@@ -579,7 +550,7 @@ class Mutar {
         if (littleEndian === null) {
             littleEndian = this.littleEndian;
         }
-        this.essentials = this.constructor.convert(this, type, trim, littleEndian, this.view);
+        this.newArray = this.constructor.convert(this, type, trim, littleEndian, this.view);
         this.type = type;
         this.typeConstructor = Utils.ArrayTypes[type];
     }
@@ -589,9 +560,12 @@ class Mutar {
         return new Mutar(this.array.slice());
     }
 
+    /**
+     * @param {number} index
+     */
     detach(index) {
         let detached;
-        [this.essentials, detached] = this.constructor.detach(this.array, index)[1];
+        [this.newArray, detached] = this.constructor.detach(this.array, index)[1];
         return detached;
     }
 
@@ -599,47 +573,45 @@ class Mutar {
         if (littleEndian === null) {
             littleEndian = this.littleEndian;
         }
-        this.essentials = this.constructor.insert(this.array, index, byte, this.littleEndian);
+        this.newArray = this.constructor.insert(this.array, index, byte, this.littleEndian);
     }
 
-    push(b, littleEndian=null) {
-        if (littleEndian === null) {
-            littleEndian = this.littleEndian;
+    push(...args) {
+        if (typeof(args.at(-1)) !== "boolean") {
+            args.push(this.littleEndian);
         }
-        this.essentials = this.constructor.push(this.array, b, littleEndian);
-        return this.array.at(-1);
+        let len;
+        [this.newArray, len] = this.constructor.push(this.array, ...args);
+        return len;
     }
 
     pop() {
         let popped;
-        [this.essentials, popped] = this.constructor.pop(this.array);
+        [this.newArray, popped] = this.constructor.pop(this.array);
         return popped;
     }
 
-    unshift(b, littleEndian=null) {
-        if (littleEndian === null) {
-            littleEndian = this.littleEndian;
+    unshift(...args) {
+        if (typeof(args.at(-1)) !== "boolean") {
+            args.push(this.littleEndian);
         }
-        this.essentials = this.constructor.unshift(this.array, b, littleEndian);
-        return this.array[0];
+        let len;
+        [this.newArray, len] = this.constructor.unshift(this.array, ...args);
+        return len;
     }
 
     shift() {
         let shifted;
-        [this.essentials, shifted] = this.constructor.shift(this.array);
+        [this.newArray, shifted] = this.constructor.shift(this.array);
         return shifted;
     }
 
     splice(...args) {
-        let addEndianness = true;
-        for (const bool of [false, true]) {
-            if (args.indexOf(bool) > -1) { 
-                addEndianness = false;
-            }
+        if (typeof(args.at(-1)) !== "boolean") {
+            args.push(this.littleEndian);
         }
-        if (addEndianness) args.push(this.littleEndian);
         let spliced;
-        [this.essentials, spliced] = this.constructor.splice(this.array, ...args)
+        [this.newArray, spliced] = this.constructor.splice(this.array, ...args)
         return spliced;
     }
 
@@ -648,12 +620,43 @@ class Mutar {
             // eslint-disable-next-line prefer-destructuring
             littleEndian = this.littleEndian;
         }
-        this.essentials = this.constructor.trim(this.array, littleEndian);
+        this.newArray = this.constructor.trim(this.array, littleEndian);
     }
 
     zeroPurge() {
-        this.essentials = this.constructor.zeroPurge(this.array);
+        this.newArray = this.constructor.zeroPurge(this.array);
     }
 }
+
+// make build in array methods accessible at root
+[
+    "at",
+    "copyWithin",
+    "entries",
+    "every",
+    "fill",
+    "filter",
+    "find",
+    "findIndex",
+    "forEach",
+    "includes",
+    "indexOf",
+    "join",
+    "keys",
+    "lastIndexOf",
+    "map",
+    "reduce",
+    "reduceRight",
+    "reverse",
+    "slice",
+    "some",
+    "sort",
+    "values",
+].forEach((fn) => {
+    // eslint-disable-next-line no-new-func
+    const method = new Function("...args", `return this.array.${fn}(...args)`);
+    Object.defineProperty(method, "name", {value: fn});
+    Mutar.prototype[fn] = method;
+});
 
 export default Mutar
