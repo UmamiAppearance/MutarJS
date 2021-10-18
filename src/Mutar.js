@@ -332,32 +332,30 @@ class Mutar {
         // the element of the given index is not included
         // and also returned.
 
-        const lastIndex = obj.length-1;
-        if (index > lastIndex) {
-            throw new RangeError(`The provided index is out of range (gt ${lastIndex})`);
-        }
-        if (index < 0) {
-            index += lastIndex + 1;
-            if (index < 0) {
-                throw new RangeError(`The provided index is out of range (lt ${-1-lastIndex})`);
-            }
-        }
-        const detached = obj[index];
-        let newArray, popped;
-        [newArray, popped] = Mutar.pop(obj);
-        newArray.copyWithin(index, index+1);
-        if (index < lastIndex) {
-            newArray[lastIndex-1] = popped;
-        }
-        return [newArray, detached];
+        index = Math.min(index, obj.length-1);
+        let detached, newArray;
+        [newArray, detached] = Mutar.splice(obj, index, 1);
+        return [newArray, detached[0]];
     }
 
     static insert(obj, index, byte, littleEndian=SYS_LITTLE_ENDIAN) {
+        // Inserts a value at the given index, returns
+        // the new Array and the inserted value. (Which
+        // may differ from the input if overflow is
+        // happening.)
+
         if (index < 0) {
+            // -1 Is the end of the new array
             index = Math.max(obj.length+index+1, 0);
+        } else if (index > obj.length) {
+            // The index has to stop at the new last index.
+            // (splice handles this anyway, but "index"
+            // changes in that case.)
+            index = obj.length;
         }
-        // TODO: retuen inserted val
-        return Mutar.splice(obj, index, 0, byte, littleEndian)[0];
+        const newArray = Mutar.splice(obj, index, 0, byte, littleEndian)[0];
+        const inserted = newArray[index];
+        return [newArray, inserted];
     }
 
     static push(obj, b, littleEndian=SYS_LITTLE_ENDIAN) {
@@ -369,7 +367,8 @@ class Mutar {
         const method = Utils.ViewMethods[type].set;
 
         newArray.set(obj);
-        view[method]((obj.length * obj.BYTES_PER_ELEMENT), b, littleEndian);
+        const bytePos = obj.length * obj.BYTES_PER_ELEMENT;
+        view[method]((bytePos), b, littleEndian);
         
         return newArray;
     }
