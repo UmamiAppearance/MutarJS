@@ -194,10 +194,7 @@ class Mutar {
         }
 
         const force = argsIncludes("force");
-        let trim = argsIncludes("trim");
-        if (argsIncludes("purge")) {
-            trim = "purge";
-        }
+        const trim = argsIncludes("trim");
 
         if (!Mutar.isTypedArray(obj)) {
             throwTypeError(obj);
@@ -237,9 +234,8 @@ class Mutar {
         /** 
          * Converts a given TypedArray to another type.
          * If the new type has less bytes per element than
-         * its original, it is possible to trim leftover 
-         * zero padding (or even purge all zeros). If a 
-         * view is already at hand it can get passed too.
+         * its original. If a view of the object exists 
+         * already, it can get passed.
          */
 
         type = Mutar.typeFromInput(type);
@@ -249,15 +245,10 @@ class Mutar {
         let newArray;
 
         if (!byteDiff) {
-            // zero padding is not needed, zeros can get trimmed in some cases
+            // zero padding is not needed, zeros can get trimmed
             newArray = new Utils.ArrayTypes[type](obj.buffer);
             if (trim) {
-                if (trim === "purge") {
-                    newArray = Mutar.purge(newArray);
-                } else {
-                    newArray = Mutar.trim(newArray, littleEndian);
-                }
-                
+                newArray = Mutar.trim(newArray, littleEndian);
             }
         } else {
             // zero padding is necessary
@@ -285,7 +276,7 @@ class Mutar {
 
     static flipEndianness(obj) {
         /**
-         * Takes an object, reverses it at byte level
+         * Takes an object, reverses the individual integers
          * and returns it.
          */
 
@@ -426,93 +417,12 @@ class Mutar {
         return [newArray, spliced];
     }
 
-    static trim(obj, littleEndian=SYS_LITTLE_ENDIAN) {
-        /* 
-         * Trims null bytes from the given array and returns 
-         * a new array. Only padded zeros are getting removed
-         * according to the endianness.
-         *
-         * Example:
-         * Integer "400",  binary "110010000"
-         *
-         * Uint32Array(1)                              [ 400 ]
-         *                  [00000000000000000000000110010000]
-         *
-         * Uint8Array(4) {big endian}
-         *            [       0,        0,        1,      144]
-         *            [00000000, 00000000, 00000001, 10010000]
-         *
-         * As you can see: the first two bytes are holding
-         * no information and can get trimmed without losing
-         * information.
-         *
-         * In little endian it is the same, but the order is
-         * flipped.
-         * 
-         * Uint8Array(4) {little endian}
-         *            [10010000, 00000001, 00000000, 00000000]
-         */
-
-        function giveBack(bytes, bytesPerElem) {
-            // The trimming below removes all null bytes,
-            // but for all types > (U)int8 zero padding
-            // a necessity. The actual trimming is done
-            // via index keys. This functions sets the 
-            // index back to a legit value.
-
-            let adder = 0;
-            while (bytes % bytesPerElem) {
-                bytes++;
-                adder++;
-            }
-            return adder;
-        }
-
-        const type = obj.constructor.name;
-        const bytesPerElem = obj.constructor.BYTES_PER_ELEMENT;
-        const isGrouped = (bytesPerElem > 1);
-        
-        // Set a view that is able to look at single bytes
-        // (If this is not already the case) 
-        let singleBytesView = (isGrouped) ? new Uint8Array(obj.buffer) : obj;
-
-        // Set initial start-end index values 
-        const absEnd = obj.byteLength-1;
-        let end = absEnd;
-        let start = 0;
-
-        // Look at the right hand side for big endian
-        // and left hand for little endian. 
-        if (!littleEndian) {
-            for (start; start<=end; start++) {
-                if (singleBytesView[start]) {
-                    break;
-                }
-            }
-            if (isGrouped) start += giveBack(end-start+1, bytesPerElem);
-        } else {
-            for (end; end>=0; end--) {
-                if (singleBytesView[end]) {
-                    break;
-                }
-            }
-            if (isGrouped) end += giveBack(end-start+1, bytesPerElem);
-        }
-
-        // Only construct a new array if changes are possible
-        if (start > 0 || end < absEnd) {
-            singleBytesView = singleBytesView.slice(start, end+1);
-            obj = new Utils.ArrayTypes[type](singleBytesView.buffer);
-        }
-        return obj;
-    }
-
-    static zeroPurge(obj) {
+    static trim(obj) {
         /**
          * Removes all null-bytes from the given object
          * and returns a freshly purged array.
          * Be careful. This will destroy data integrity
-         * in most cases.
+         * in many cases.
          */
         return obj.filter((b) => b !== 0);
     }
@@ -559,7 +469,7 @@ class Mutar {
 
     convert(type, trim=false) {
         type = this.constructor.typeFromInput(type);
-        this.newArray = this.constructor.convert(this, type, trim, this.littleEndian, this.view);
+        this.newArray = this.constructor.convert(this.array, type, trim, this.littleEndian, this.view);
         this.type = type;
         this.typeConstructor = Utils.ArrayTypes[type];
     }
@@ -633,16 +543,8 @@ class Mutar {
         return spliced;
     }
 
-    trim(littleEndian=null) {
-        if (littleEndian === null) {
-            // eslint-disable-next-line prefer-destructuring
-            littleEndian = this.littleEndian;
-        }
-        this.newArray = this.constructor.trim(this.array, littleEndian);
-    }
-
-    zeroPurge() {
-        this.newArray = this.constructor.zeroPurge(this.array);
+    trim() {
+        this.newArray = this.constructor.trim(this.array);
     }
 }
 
