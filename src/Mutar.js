@@ -4,34 +4,47 @@
  * @version 0.1.0
  * @author UmamiAppearance [mail@umamiappearance.eu]
  * @license GPL-3.0
+ *
+ * Mutar is both toolkit a to interact with typed arrays and 
+ * "modify" them and a constructor of a special object. Or  let"s
+ * say a kit to emulate modification. Each "mutation" actually 
+ * creates a new array every time.
+ * This comes to a price of course. Each time the array "changes",
+ * a new array is allocated in memory. Keep that in mind when using
+ * it.
+ * Mutar objects and tools on the other hand are a very convenient way 
+ * to handle binary data. If constructed, the array behaves pretty 
+ * much as a regular array. You can concatenate, pop, shift, unshift...
+ * On top of that the type can be changed from - let"s say - Uint8 to 
+ * Float64. Also zero padding can get trimmed. 
  */
+
 
 /* eslint-disable prefer-destructuring */
 
 const Utils = {
-    getSysEndianness: () => {
-        /** 
-         * Test endianness:
-         * Uint16Array: Uint16Array(1) [ 1 ]
-         * Binary:       [00000000 00000001]
-         * Uint8 (BE)                  [0 1]
-         * Uint8 (LE)                  [1 0]
-         * 
-         * Looking at index 0 shows 0 for
-         * big endian and 1 for little endian
-         */
 
+    /** 
+     * Test endianness:
+     * Uint16Array: Uint16Array(1) [ 1 ]
+     * Binary:       [00000000 00000001]
+     * Uint8 (BE)                  [0 1]
+     * Uint8 (LE)                  [1 0]
+     * 
+     * Looking at index 0 shows 0 for
+     * big endian and 1 for little endian
+     */
+    getSysEndianness: () => {
         const testInt = new Uint16Array([1]);
         const byteRepresentation = new Uint8Array(testInt.buffer);
         return Boolean(byteRepresentation.at(0));
     },
 
+    /**
+     * Object which contains all possible TypedArrays
+     * and the according constructors.
+     */
     ArrayTypes: {
-        /**
-         * Object which contains all possible TypedArrays
-         * and the according constructors.
-         */
-
         Int8Array: Int8Array,
         Uint8Array: Uint8Array,
         Uint8ClampedArray: Uint8ClampedArray,
@@ -77,31 +90,20 @@ const Utils = {
 const SYS_LITTLE_ENDIAN = Utils.getSysEndianness();
 
 class Mutar {
-    /**
-     * Mutar is both toolkit a to interact with typed arrays and 
-     * "modify" them and a constructor of a special object. Or  let"s
-     * say a kit to emulate modification. Each "mutation" actually 
-     * creates a new array every time.
-     * This comes to a price of course. Each time the array "changes",
-     * a new array is allocated in memory. Keep that in mind when using
-     * it.
-     * Mutar objects and tools on the other hand are a very convenient way 
-     * to handle binary data. If constructed, the array behaves pretty 
-     * much as a regular array. You can concatenate, pop, shift, unshift...
-     * On top of that the type can be changed from - let"s say - Uint8 to 
-     * Float64. Also zero padding can get trimmed. 
-     */
 
+    /**
+     * Creates a special object. The actual array is located
+     * at obj.array, all methods are available at top level.
+     * Those are all available methods for typed arrays and
+     * most of the ones for regular arrays. Plus some bonus
+     * features.
+     * 
+     * @param {({ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; } | number[] | string)} input - Mut be set. Can be a TypedArray, a string or buffer and regular array
+     * @param {string|function} [type] - A string or TypedArray function that must be specified for buffer and regular arrays
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false
+     * 
+     */
     constructor(input, type, littleEndian=SYS_LITTLE_ENDIAN) {
-        /**
-         * Creates a special object. The actual array is located
-         * at obj.array, all methods are available at top level.
-         * Those are all available methods for typed arrays and
-         * regular arrays. Plus some bonus features.
-         * 
-         * @param {({ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; } | Object[] | String )} input - Can be a TypedArray, a string or buffer and regular array
-         * @param {string} [type] - A string that needs to be specified for buffer and regular arrays
-         */
 
         this.littleEndian = littleEndian;
 
@@ -110,17 +112,16 @@ class Mutar {
             input = new TextEncoder().encode(input);
         }
         
+        // If the input is a TypedArray, all information can
+        // get read from that object.
         if (ArrayBuffer.isView(input)) {
-            // If the input is a TypedArray, all information can
-            // get read from that object.
-
             this.newArray = input;
             this.type = input.constructor.name;
             this.typeConstructor = Utils.ArrayTypes[input.constructor.name];
-        } else if (input instanceof ArrayBuffer || Array.isArray(input)) {
-            // If not the type must be specified and a new typed
-            // array gets constructed based on the given information.
 
+        // If not the type must be specified and a new typed
+        // array gets constructed based on the given information.
+        } else if (input instanceof ArrayBuffer || Array.isArray(input)) {
             let error = true;
             if (type) {
                 type = Mutar.typeFromInput(type);
@@ -132,6 +133,7 @@ class Mutar {
                 }
             }
             if (error) throw new TypeError("For Array and ArrayBuffer the type needs to be specified as a second argument.");
+
         } else {
             const emptyMsg = (input) ? "" : "An empty call is not possible.\n";
             throw new TypeError(`${emptyMsg}Allowed input types are: TypedArray, ArrayBuffer, Array, String`);
@@ -139,12 +141,17 @@ class Mutar {
     }
 
     
-    // Static methods. To use Mutar as a toolkit for 
-    // interacting with typed arrays.
+    // -------------- > static methods | toolkit < -------------- //
 
+
+    /** 
+     * Extract the type from a TypedArray constructor
+     * 
+     * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
+     * @returns {string} - The name of the TypedArray constructor as string e.g. "Int8Array"
+     * 
+     */ 
     static typeFromInput(type) {
-        // Extract the type from a TypedArray constructor
-
         if (typeof(type) === "function") {
             type = type.name;
         }
@@ -158,29 +165,75 @@ class Mutar {
         return type;
     }
 
+
+    /**
+     * Get Type from "obj.constructor.name"
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
+     * @returns {string} - Returns the name of the constructor (Uint8Array, Int16Array, ...) 
+     * 
+     */
     static getType(obj) {
-        // Returns the name of the constructor (Uint8Array, Int16Array, ...)
         return obj.constructor.name;
     }
+
     
+    /**
+     * Test if object is a typed array.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
+     * @returns {boolean} - Only true if input object is a TypedArray
+     * 
+     */
     static isTypedArray(obj) {
-        // Test if object is a typed array
+
         return obj.constructor.name in Utils.ArrayTypes;
     }
 
+
+    /**
+     * Test if array is of type "type"
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Should be a TypedArray, but any object can get tested for the following name as string
+     * @param {string} type - The constructor name the former arg gets tested against. 
+     * @returns {boolean} - True if "obj.constructor.name" equals "type" 
+     * 
+     */
     static isTypeOf(obj, type) {
-        // Test if array is of type xy
 
         type = Mutar.typeFromInput(type);
         return obj.constructor.name === type;
     }
 
+
+    /**
+     * Make a copy of the given array
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Should be a TypedArray, if you really want to u can clone regular arrays either
+     * @returns {{ buffer: ArrayBufferLike; }} - A unrelated copy of the input object
+     * 
+     */
     static clone(obj) {
-        // returns a copy of the given array
+
         return obj.slice();
     }
 
+
+    /**
+     * Concatenates all given array into one. 
+     * By default they must be of the same type
+     * but conversion to the type of the first
+     * element can be forced, by literally passing
+     * the string "force".
+     * 
+     * @param {Object} obj - Must be a TypedArray
+     * @param  {(buffer[]|string[])} args - At least one Typed array for concatenation. Additionally takes the strings "force" and "trim".
+     * @returns {{ buffer: ArrayBufferLike; }} - A concatenated new TypedArray of the input arrays
+     * 
+     */
     static concat(obj, ...args) {
+
+        // Test if argument is passed and remove it from "args"
         function argsIncludes(arg) {
             if (args.includes(arg)) {
                 args.splice(args.indexOf(arg), 1);
@@ -189,12 +242,16 @@ class Mutar {
             return false;
         }
 
+        // Error function
         function throwTypeError(errorObj) {
             throw new TypeError(`Your provided input is not a TypedArray: "${errorObj}" (${errorObj.constructor.name})`);
         }
 
         const force = argsIncludes("force");
-        const trim = argsIncludes("trim");
+        let trim = argsIncludes("trim");
+        if (argsIncludes("purge")) {
+            trim = "purge";
+        }
 
         if (!Mutar.isTypedArray(obj)) {
             throwTypeError(obj);
@@ -203,7 +260,12 @@ class Mutar {
         }
 
         const type = obj.constructor.name;
+
+        // For starters use an ordinary array for concatenation
         let precursor = [...obj];
+
+        // Walk through all provided arrays and collect
+        // them in "precursor"
 
         args.forEach((nextObj) => {
             if (!Mutar.isTypedArray(nextObj)) {
@@ -225,18 +287,25 @@ class Mutar {
             precursor = precursor.concat([...next]);
         });
         
-        const newArray = Utils.ArrayTypes[type].from(precursor);
-
-        return newArray;
+        return Utils.ArrayTypes[type].from(precursor);
     }
 
+
+    /**
+     * Converts a given TypedArray to another type.
+     * Null bytes can get removed directly in the 
+     * process. Only padded zeros or all. If a view 
+     * of the object exists already, it can get passed.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
+     * @param {(boolean|string)} [trim=false] - If true, padded zeros according to the endianness get trimmed, if set to string "purge" all null bytes get discarded
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false 
+     * @param {Object} [view] - Sometimes a view of the array is already defined. Pass it here. 
+     * @returns {{ buffer: ArrayBufferLike; }} - The converted TypedArray
+     * 
+     */
     static convert(obj, type, trim=false, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
-        /** 
-         * Converts a given TypedArray to another type.
-         * If the new type has less bytes per element than
-         * its original. If a view of the object exists 
-         * already, it can get passed.
-         */
 
         type = Mutar.typeFromInput(type);
         const byteLen = obj.byteLength;
@@ -244,14 +313,15 @@ class Mutar {
         
         let newArray;
 
+        // zero padding is not needed, zeros can get trimmed
         if (!byteDiff) {
-            // zero padding is not needed, zeros can get trimmed
             newArray = new Utils.ArrayTypes[type](obj.buffer);
             if (trim) {
-                newArray = Mutar.trim(newArray, littleEndian);
+                newArray = Mutar.trim(newArray, (trim === "purge"), littleEndian);
             }
-        } else {
-            // zero padding is necessary
+        
+        // zero padding is necessary
+        } else {    
             const missingBytes = Utils.ArrayTypes[type].BYTES_PER_ELEMENT - byteDiff;
             const newLen = byteLen + missingBytes;
             if (!view) view = new DataView(obj.buffer);
@@ -274,11 +344,16 @@ class Mutar {
         return newArray;
     }
 
+
+    /**
+     * Takes an object, reverses the individual integers
+     * and returns it.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @returns {{ buffer: ArrayBufferLike; }} - A new TypedArray with reversed integers
+     * 
+     */
     static flipEndianness(obj) {
-        /**
-         * Takes an object, reverses the individual integers
-         * and returns it.
-         */
 
         const bytesPerElem = obj.constructor.BYTES_PER_ELEMENT 
         if (bytesPerElem > 1) {
@@ -294,24 +369,38 @@ class Mutar {
         return obj;
     }
 
+
+    /**
+     * Returns a new TypedArray from the given obj,
+     * the element of the given index is excluded
+     * and also returned.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param {number} index - Positive or negative index key. Over- or underflow cannot happen.  
+     * @returns {Array} - Returns the new TypedArray and the detached value
+     * 
+     */
     static detach(obj, index) {
-        /** 
-         * Returns a new TypedArray from the given obj,
-         * the element of the given index is excluded
-         * and also returned.
-         */
 
         index = Math.min(index, obj.length-1);
         let detached, newArray;
         [newArray, detached] = Mutar.splice(obj, index, 1);
+
         return [newArray, detached[0]];
     }
 
-    static insert(obj, index, byte, littleEndian=SYS_LITTLE_ENDIAN) {
-        /**
-         * Inserts a value at the given index, returns
-         * the new Array and the new array length.
-         */
+
+    /**
+     * Inserts a value at the given index.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
+     * @param {number} index - Positive or negative index key. Over- or underflow cannot happen. 
+     * @param {number} integer - Positive or negative integer.
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false 
+     * @returns {Array} - Returns the new TypedArray and the new array length
+     * 
+     */
+    static insert(obj, index, integer, littleEndian=SYS_LITTLE_ENDIAN) {
 
         if (index < 0) {
             // -1 Is the end of the new array
@@ -322,55 +411,84 @@ class Mutar {
             // changes in that case.)
             index = obj.length;
         }
-        const newArray = Mutar.splice(obj, index, 0, byte, littleEndian)[0];
+        const newArray = Mutar.splice(obj, index, 0, integer, littleEndian)[0];
         return [newArray, newArray.length];
     }
 
+
+    /**
+     * Pushes values to the end of a given array.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param  {...number} args - Positive or negative integers.
+     * @returns {Array} - Returns the new TypedArray and the new array length
+     * 
+     */
     static push(obj, ...args) {
-        /**
-         * Pushes values to the end of a given array.
-         */
         
         const newArray = Mutar.splice(obj, obj.length, 0, ...args)[0];
         return [newArray, newArray.length];
     }
 
+
+    /**
+     * Pops one integer from a given array.
+     * Returns the new array and the removed
+     * int.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @returns {Array} - Returns the new TypedArray and the new array length
+     * 
+     */
     static pop(obj) {
-        /**
-         * Removes one byte from a given array.
-         * Returns the new array and the removed
-         * byte.
-         */
 
         return [obj.slice(0, -1), obj.at(-1)];
     }
 
-    static unshift(obj, ...args) {
-        /**
-         * Unshifts bytes to the beginning of a given array.
-         */
 
+    /**
+     * Unshifts bytes to the beginning of a given array.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param  {...number} args - Positive or negative integers.
+     * @returns {Array} - Returns the new TypedArray and the n{{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }}
+     */
+    static unshift(obj, ...args) {
+        
         const newArray = Mutar.splice(obj, 0, 0, ...args)[0];
         return [newArray, newArray.length];
     }
 
+
+    /**
+     * Shifts one integer from a given array.
+     * Returns the new array and the removed
+     * int.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @returns {Array} - Returns the new TypedArray and the new array length
+     * 
+     */
     static shift(obj) {
-        /**
-         * Shifts one byte from a given array.
-         * Returns the new array and the removed
-         * byte.
-         */
 
         return [obj.slice(1), obj.at(0)];
     }
 
+
+    /**
+     * Works basically as "Array.splice()". Endianness
+     * is taken into account. Gets called by many other
+     * functions (push, unshift...)
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj 
+     * @param {number} start - Positive or negative index key. Over- or underflow cannot happen.  
+     * @param {number} deleteCount - Positive number (count) 
+     * @param  {(...numbers|boolean)} items - Integers for insertion. The last item can be a boolean, which indicates if little endian is true/false 
+     * @returns {Array} - Returns the new array and the array of items, that were spliced
+     * 
+     */
     static splice(obj, start, deleteCount, ...items) {
-        /**
-         * Works basically as "Array.splice()". Endianness
-         * is taken into account. Gets called by many other
-         * functions (push, unshift...). 
-         */
-        
+
         const type = obj.constructor.name;
         const len = obj.length;
 
@@ -417,14 +535,46 @@ class Mutar {
         return [newArray, spliced];
     }
 
-    static trim(obj) {
-        /**
-         * Removes all null-bytes from the given object
-         * and returns a freshly purged array.
-         * Be careful. This will destroy data integrity
-         * in many cases.
-         */
-        return obj.filter((b) => b !== 0);
+
+    /**
+     * Can safely remove zero padding, if purge
+     * is true, all null bytes get removed. This
+     * will destroy data integrity in many cases.
+     *  
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param {boolean} [purge=false] - Set true for removing all zero bytes
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - Endianness decides where zero padding can get removed (start or end of array) 
+     * @returns {Object} - A trimmed TypedArray, probably smaller than the input
+     * 
+     */
+    static trim(obj, purge=false, littleEndian=SYS_LITTLE_ENDIAN) {
+
+        if (purge) {
+            return obj.filter((b) => b !== 0);
+        }
+
+        const len = obj.length;
+        let start = 0;
+        let end = len-1;
+
+        // Look at the right hand side of the array
+        // for big endian and left hand for little. 
+
+        if (!littleEndian) {
+            for (start; start<len; start++) {
+                if (obj[start]) {
+                    break;
+                }
+            }
+        } else {
+            for (end; end>=0; end--) {
+                if (obj[end]) {
+                    break;
+                }
+            }
+        }
+
+        return obj.slice(start, end+1);
     }
 
 
@@ -447,23 +597,36 @@ class Mutar {
         return SYS_LITTLE_ENDIAN;
     }
 
+    /**
+     * Returns a clone of the current array.
+     * The ArrayBuffer is not shared.
+     * 
+     * @returns {{ buffer: ArrayBufferLike; }} - A clone of the current array.
+     */
     extractArrayClone() {
         return this.array.slice();
     }
     
     /**
-     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} arr
+     * Calls Mutar.concat.
+     * 
+     * @param  {(...buffer|string[])} args - At least one Typed array for concatenation. Additionally takes the strings "force" and "trim"
+     * 
      */
-    concat(arr) {
-        const array = this.constructor.concat(this.array, arr);
+    concat(...args) {
+        const array = this.constructor.concat(this.array, ...args);
         return new Mutar(array);
     }
 
     /**
-     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} arr
+     * Concat and set the array to the concatenated array.
+     * (Same as concat, but sets the array in one move)
+     * 
+     * @param  {(...buffer|string[])} args - At least one Typed array for concatenation. Additionally takes the strings "force" and "trim"
+     * 
      */
     conset(arr) {
-        // concat and set the array to the concatenated array.
+        
         this.newArray = this.concat(arr).array;
     } 
 
@@ -578,5 +741,7 @@ class Mutar {
     Object.defineProperty(method, "name", {value: fn});
     Mutar.prototype[fn] = method;
 });
+
+Mutar.typeFromInput()
 
 export default Mutar
