@@ -72,18 +72,51 @@ const Utils = {
         BigUint: "BigUint64Array"
     },
 
-    ViewSetters: {
-        Int8Array: "setInt8",
-        Uint8Array: "setUint8",
-        Uint8ClampedArray: "setUint8",  
-        Int16Array: "setInt16",
-        Uint16Array: "setUint16",
-        Int32Array: "setInt32",
-        Uint32Array: "setUint32",
-        Float32Array: "setFloat32",
-        Float64Array: "setFloat64",
-        BigInt64Array: "setBigInt64",
-        BigUint64Array: "setBigUint64"
+    ViewMethods: {
+        Int8Array: {
+            get: "getInt8",
+            set: "setInt8"
+        },
+        Uint8Array: {
+            get: "getUint8",
+            set: "setUint8"
+        },
+        Uint8ClampedArray: {
+            get: "getUint8",
+            set: "setUint8"
+        },  
+        Int16Array: {
+            get: "getInt16",
+            set: "setInt16"
+        },
+        Uint16Array: {
+            get: "getUint16",
+            set: "setUint16",
+        },
+        Int32Array: {
+            get: "getInt32",
+            set: "setInt32"
+        },
+        Uint32Array: {
+            get: "getUint32",
+            set: "setUint32"
+        },
+        Float32Array: {
+            get: "getFloat32",
+            set: "setFloat32"
+        },
+        Float64Array: {
+            get: "getFloat64",
+            set: "setFloat64"
+        },
+        BigInt64Array: {
+            get: "getBigInt64",
+            set: "setBigInt64"
+        },
+        BigUint64Array: {
+            get: "getBigUint64",
+            set: "setBigUint64"
+        }
     }
 }
 
@@ -286,51 +319,89 @@ class Mutar {
 
     /**
      * Converts a given TypedArray to another type.
-     * Null bytes can get removed directly in the 
-     * process. Only padded zeros or all. If a view 
-     * of the object exists already, it can get passed.
+     * By default, missing zeros are appended to the
+     * start or end of the array (depending on the 
+     * endianness).
+     * Null bytes can get removed (trimmed) directly 
+     * in the process. 
+     * It is also possible to stretch the array, and
+     * zero pad the individual integers, by setting
+     * "preserveIntegers" to true.
+     * If a view of the object exists already, it can
+     * get passed.
      * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
      * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
-     * @param {(boolean|string)} [trim=false] - If true, padded zeros according to the endianness get trimmed, if set to string "purge" all null bytes get discarded
+     * @param {(boolean|string)} [trim=false] - If true padded zeros according to the endianness get trimmed, if set to string "purge" all null bytes get discarded
+     * @param {boolean} [preserveInt] - If true the individual integers keep the same (if they fit)
      * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false 
      * @param {Object} [view] - Sometimes a view of the array is already defined. Pass it here. 
      * @returns {{ buffer: ArrayBufferLike; }} - The converted TypedArray
      */
-    static convert(obj, type, trim=false, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
+    static convert(obj, type, trim=false, preserveInt=false, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
+
+        function num(n, bigInt) {
+            return (bigInt) ? BigInt(n) : Number(n);
+        }
 
         type = Mutar.typeFromInput(type);
-        const byteLen = obj.byteLength;
-        const byteDiff = byteLen % Utils.ArrayTypes[type].BYTES_PER_ELEMENT;
-        
         let newArray;
 
-        // zero padding is not needed, zeros can get trimmed
-        if (!byteDiff) {
-            newArray = new Utils.ArrayTypes[type](obj.buffer);
-            if (trim) {
-                newArray = Mutar.trim(newArray, (trim === "purge"), littleEndian);
-            }
-        
-        // zero padding is necessary
-        } else {    
-            const missingBytes = Utils.ArrayTypes[type].BYTES_PER_ELEMENT - byteDiff;
-            const newLen = byteLen + missingBytes;
+        if (preserveInt) {
+            
+            const curBytesPerElem = obj.BYTES_PER_ELEMENT;
+            const newBytesPerElem = Utils.ArrayTypes[type].BYTES_PER_ELEMENT;
+            
             if (!view) view = new DataView(obj.buffer);
-            
-            // initialize a new Uint8Array of the required byte length
-            let Uint8 = new Uint8Array(newLen);
-            
-            // Fill the array with the values of the old array
-            // (little endian starts on the left hand side. 
-            // Insertion can start an 0. Big endian has a
-            // calculated starting point).
 
-            const start = (littleEndian) ? 0 : missingBytes;
-            for (let i=0, l=obj.byteLength; i<l; i++) {
-                Uint8[i+start] = view.getUint8(i, littleEndian);
+            newArray = new Utils.ArrayTypes[type](obj.length);
+            const nView = new DataView(newArray.buffer);
+
+            const get = Utils.ViewMethods[obj.constructor.name].get;
+            const set = Utils.ViewMethods[type].set;
+
+            const bigInt = (newBytesPerElem > 7);
+            
+            for (let i=0; i<obj.length; i++) {
+                const curOffset = i * curBytesPerElem;
+                const val = num(view[get](curOffset, littleEndian), bigInt);
+
+                const newOffset = i * newBytesPerElem;
+                nView[set](newOffset, val, littleEndian);
             }
-            newArray = new Utils.ArrayTypes[type](Uint8.buffer);
+
+        } else {
+            const byteLen = obj.byteLength;
+            const byteDiff = byteLen % Utils.ArrayTypes[type].BYTES_PER_ELEMENT;
+            
+
+            // zero padding is not needed, zeros can get trimmed
+            if (!byteDiff) {
+                newArray = new Utils.ArrayTypes[type](obj.buffer);
+                if (trim) {
+                    newArray = Mutar.trim(newArray, (trim === "purge"), littleEndian);
+                }
+            
+            // zero padding is necessary
+            } else {    
+                const missingBytes = Utils.ArrayTypes[type].BYTES_PER_ELEMENT - byteDiff;
+                const newLen = byteLen + missingBytes;
+                if (!view) view = new DataView(obj.buffer);
+                
+                // initialize a new Uint8Array of the required byte length
+                let Uint8 = new Uint8Array(newLen);
+                
+                // Fill the array with the values of the old array
+                // (little endian starts on the left hand side. 
+                // Insertion can start an 0. Big endian has a
+                // calculated starting point).
+
+                const start = (littleEndian) ? 0 : missingBytes;
+                for (let i=0, l=obj.byteLength; i<l; i++) {
+                    Uint8[i+start] = view.getUint8(i, littleEndian);
+                }
+                newArray = new Utils.ArrayTypes[type](Uint8.buffer);
+            }
         }
 
         return newArray;
@@ -504,7 +575,7 @@ class Mutar {
         const endArray = obj.subarray(end, len);
 
         let newArray;
-        const set = Utils.ViewSetters[type];
+        const set = Utils.ViewMethods[type].set;
 
         if (items.length) {
             const ins = new Utils.ArrayTypes[type](items.length);
@@ -631,13 +702,15 @@ class Mutar {
      * Calls Mutar.convert
      * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
      * @param {(boolean|string)} [trim=false] - If true, padded zeros according to the endianness get trimmed, if set to string "purge" all null bytes get discarded 
+     * @param {boolean} [preserveInt] - If true the individual integers keep the same (if they fit)
      */
-    convert(type, trim=false) {
+    convert(type, trim=false, preserveInt=false) {
         type = this.constructor.typeFromInput(type);
-        this.updateArray = this.constructor.convert(this.array, type, trim, this.littleEndian, this.view);
+        this.updateArray = this.constructor.convert(this.array, type, trim, preserveInt, this.littleEndian, this.view);
         this.type = type;
         this.typeConstructor = Utils.ArrayTypes[type];
     }
+
 
     /**
      * Returns a clone of the Mutar object. The ArrayBuffer
@@ -645,8 +718,7 @@ class Mutar {
      * 
      * @returns {Object} - A independent copy of the current Mutar object 
      */
-    clone() {
-        
+    clone() {  
         return new Mutar(this.array.slice());
     }
 
