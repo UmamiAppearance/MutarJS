@@ -327,8 +327,6 @@ class Mutar {
      * It is also possible to stretch the array, and
      * zero pad the individual integers, by setting
      * "preserveIntegers" to true.
-     * If a view of the object exists already, it can
-     * get passed.
      * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
      * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
@@ -346,6 +344,24 @@ class Mutar {
 
         type = Mutar.typeFromInput(type);
         let newArray;
+
+        // The following mode is looking at the individual
+        // integers. Lets take a look at th following example
+        // (big endian byte order)
+        //
+        //      Uint16Array(2) [               200               400 ]
+        //      Uint8Array(4)  [               200        1      144 ]
+        //      Binary         [ 00000000 11001000 00000001 10010000 ]
+        //
+        // Converted to Uint32:
+        //      Binary         [ 00000000 00000000 00000000 11001000 00000000 00000000 10010000 00000001 ]
+        //      Uint8Array(8)  [        0        0        0      200        0        0      144        1 ]
+        //      Uint32Array(2) [                                 200                                 400 ]        
+        // 
+        // The ArrayBuffer has now doubled in size, but the view (Uint32) has the same two values as the
+        // initial Uint16Array.
+        // There is no issue going up, the other direction can be problematic
+
 
         if (preserveInt) {
             
