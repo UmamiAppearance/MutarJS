@@ -29,6 +29,11 @@ function makeUnit(unit) {
     result.errorMessages[unit] = {}; 
 }
 
+function nextTest(unit) {
+    result.tests++;
+    result.units[unit].tests++;
+}
+
 function typeTests() {
     /*
         Tests for the simple functions of type 
@@ -43,8 +48,7 @@ function typeTests() {
     const expectations = ["Uint8Array", "Uint8Array", true, true];
 
     ["typeFromInput", "getType", "isTypedArray"].forEach((subUnit, i) => {
-        result.tests++;
-        result.units[unit].tests++;
+        nextTest(unit);
 
         const output = Mutar[subUnit](inputs[i]);
         if (output !== expectations[i]) {
@@ -58,8 +62,7 @@ function typeTests() {
         }
     });
 
-    result.tests++;
-    result.units[unit].tests++;
+    nextTest(unit);
 
     const output = Mutar.isTypeOf(Uint8, "Uint8Array");
     if (output === false) {
@@ -80,205 +83,200 @@ function objTests() {
     const obj = new Mutar("Hello ");
 
     makeUnit(unit);
-    
-    function next() {
-        result.tests++;
-        result.units[unit].tests++;
-    }
 
     // ------------------------------------------------ //
-    // testA - conset (tests concat either)
+    // testConset - conset (tests concat either)
     // expect: complete string "Hello World!" after decoding
     
-    next();
+    nextTest(unit);
 
-    const arrayB = new Uint8Array([87, 111, 114, 108, 100, 33]);
+    const arrayToConcat = new Uint8Array([87, 111, 114, 108, 100, 33]);
 
-    obj.conset(arrayB);
+    obj.conset(arrayToConcat);
 
     // Decode the array
-    const outputA = new TextDecoder().decode(obj.array);
-    const expectedA = "Hello World!";
+    const outputConset = new TextDecoder().decode(obj.array);
+    const expectedConset = "Hello World!";
 
-    if (outputA !== expectedA) {
+    if (outputConset !== expectedConset) {
         makeError(
             unit,
             "conset",
-            arrayB,
-            outputA,
-            expectedA
+            arrayToConcat,
+            outputConset,
+            expectedConset
         );
     }
 
     // ------------------------------------------------ //
-    // testB - convert
+    // testConvert - convert
     // expect: integer "4247253545" after conversion to Uint32 and addition of the 3 individual bytes
     
-    next();
+    nextTest(unit);
 
     // convert the array to Uint32 and join to string
     
-    const inputB = `MutarUint8Array(${obj.array.join()})`;
+    const inputConvert = `MutarUint8Array(${obj.array.join()})`;
     
     obj.convert(Uint32Array);
     
     // to avoid problems with endianness all uint32 integers are added up
     // (which can be risky with bigger arrays -> integer overflow)
-    const outputB = obj.array[0] + obj.array[1] + obj.array[2];
-    const expectedB = 4247253545;
+    const outputConvert = obj.array[0] + obj.array[1] + obj.array[2];
+    const expectedConvert = 4247253545;
 
-    if (outputB !== expectedB) {
+    if (outputConvert !== expectedConvert) {
         makeError(
             unit,
             "convert",
-            inputB,
-            "Addition of 3 Uint32 -> ".concat(outputB),
-            "Addition of 3 Uint32 -> ".concat(expectedB)
+            inputConvert,
+            "Addition of 3 Uint32 -> ".concat(outputConvert),
+            "Addition of 3 Uint32 -> ".concat(expectedConvert)
         );
     }
 
     // ------------------------------------------------ //
-    // testC - convert way up, get one BigUint
+    // testConvertBig - convert way up, get one BigUint
     // expect: BigUint "8022916924116329800n" at byte 0 (little endian)
     
-    next();
+    nextTest(unit);
 
-    const inputC = `MutarUint32Array(${obj.array.join()})`;
+    const inputCovertBig = `MutarUint32Array(${obj.array.join()})`;
     obj.convert(BigUint64Array);
-    const outputC = obj.view.getBigUint64(0, true);
-    const expectedC = 8022916924116329800n;
+    const outputConvertBig = obj.view.getBigUint64(0, true);
+    const expectedConvertUp = 8022916924116329800n;
     
-    if (outputC !== expectedC) {
+    if (outputConvertBig !== expectedConvertUp) {
         makeError(
             unit,
             "convertUpGetBigInt",
-            inputC,
-            outputC.toString(),
-            expectedC.toString()
+            inputCovertBig,
+            outputConvertBig.toString(),
+            expectedConvertUp.toString()
         );
     }
 
     // ------------------------------------------------ //
-    // testD - convert back to Uint8, with trimming decode to utf-8-string
-    // expect: original expectA "Hello World!"
+    // testConvertBack - convert back to Uint8, with trimming decode to utf-8-string
+    // expect: original expectConset "Hello World!"
 
-    next();
+    nextTest(unit);
 
-    const inputD = `BigUint64Array(${obj.array.join()})`;
+    const inputCovertBack = `MutarBigUint64Array(${obj.array.join()})`;
     obj.convert(Uint8Array, true);
-    const outputD = new TextDecoder().decode(obj.array);
+    const outputConvertBack = new TextDecoder().decode(obj.array);
     
-    if (outputD !== expectedA) {
+    if (outputConvertBack !== expectedConset) {
         makeError(
             unit,
             "backToInitialStr",
-            inputD,
-            outputD,
-            expectedA
+            inputCovertBack,
+            outputConvertBack,
+            expectedConset
         );
     }
 
     // ------------------------------------------------ //
-    // testE - push
+    // testPush - push
     // expect: "Hello World!!" after pushing and decoding
 
-    next();
+    nextTest(unit);
 
-    const inputE = `MutarUint8Array(${obj.array.join()}).push(33)`
+    const inputPush = `MutarUint8Array(${obj.array.join()}).push(33)`
     obj.push(33);
-    const expectedE = "Hello World!!";
-    const outputE = new TextDecoder().decode(obj.array);
+    const expectedPush = "Hello World!!";
+    const outputPush = new TextDecoder().decode(obj.array);
 
-    if (outputE !== expectedE) {
+    if (outputPush !== expectedPush) {
         makeError(
             unit,
             "push",
-            inputE,
-            outputE,
-            expectedE
+            inputPush,
+            outputPush,
+            expectedPush
         );
     }
 
     // ------------------------------------------------ //
-    // testF - pop
-    // expect: original expectA "Hello World!" + popped int 33
+    // testPop - pop
+    // expect: original expectConset "Hello World!" + popped int 33
     
-    next();
+    nextTest(unit);
 
-    const inputF = `MutarUint8Array(${obj.array.join()}).pop()`
+    const inputPop = `MutarUint8Array(${obj.array.join()}).pop()`
     const popped = obj.pop();
-    const outputF = new TextDecoder().decode(obj.array);
+    const outputPop = new TextDecoder().decode(obj.array);
 
-    if (!(outputF === expectedA && popped === 33)) {
+    if (!(outputPop === expectedConset && popped === 33)) {
         makeError(
             unit,
             "pop",
-            inputF,
-            `${outputF} && ${popped}`,
-            `${expectedA} && 33`
+            inputPop,
+            `${outputPop} && ${popped}`,
+            `${expectedConset} && 33`
         );
     }
 
     // ------------------------------------------------ //
-    // testG - unshift
+    // testUnshift - unshift
     // expect: "!Hello World!" after unshifting and decoding
 
-    next();
+    nextTest(unit);
 
-    const inputG = `MutarUint8Array(${obj.array.join()}).unshift(33)`
+    const inputUnshift = `MutarUint8Array(${obj.array.join()}).unshift(33)`
     obj.unshift(33);
-    const expectedG = "!Hello World!";
-    const outputG = new TextDecoder().decode(obj.array);
+    const expectedUnshift = "!Hello World!";
+    const outputUnshift = new TextDecoder().decode(obj.array);
 
-    if (outputG !== expectedG) {
+    if (outputUnshift !== expectedUnshift) {
         makeError(
             unit,
             "unshift",
-            inputG,
-            outputG,
-            expectedG
+            inputUnshift,
+            outputUnshift,
+            expectedUnshift
         );
     }
 
     // ------------------------------------------------ //
-    // testH - shift
-    // expect: original expectA "Hello World!" + popped int 33
+    // testShift - shift
+    // expect: original expectConset "Hello World!" + popped int 33
     
-    next();
+    nextTest(unit);
 
-    const inputH = `MutarUint8Array(${obj.array.join()}).shift()`
+    const inputShift = `MutarUint8Array(${obj.array.join()}).shift()`
     const shifted = obj.shift();
-    const outputH = new TextDecoder().decode(obj.array);
+    const outputShift = new TextDecoder().decode(obj.array);
 
-    if (!(outputF === expectedA && shifted === 33)) {
+    if (!(outputPop === expectedConset && shifted === 33)) {
         makeError(
             unit,
             "shift",
-            inputH,
-            `${outputH} && ${shifted}`,
-            `${expectedA} && 33`
+            inputShift,
+            `${outputShift} && ${shifted}`,
+            `${expectedConset} && 33`
         );
     }
 
     // ------------------------------------------------ //
-    // testI - call build in function "reverse" from root
+    // testBuildInAccess - call build in function "reverse" from root
     // expect: decoded "!dlroW olleH"
     
-    next();
+    nextTest(unit);
 
-    const inputI = `MutarUint8Array(${obj.array.join()}).reverse()`
+    const inputBuildInAccess = `MutarUint8Array(${obj.array.join()}).reverse()`
     const reversed = obj.reverse();
 
-    const outputI = new TextDecoder().decode(reversed);
-    const expectedI = "!dlroW olleH";
+    const outputBuildInAccess = new TextDecoder().decode(reversed);
+    const expectedBuildInAccess = "!dlroW olleH";
 
-    if (outputI !== expectedI) {
+    if (outputBuildInAccess !== expectedBuildInAccess) {
         makeError(
             unit,
             "buildInReverse",
-            inputI,
-            outputI,
-            expectedI
+            inputBuildInAccess,
+            outputBuildInAccess,
+            expectedBuildInAccess
         );
     }
 }
@@ -291,9 +289,7 @@ function cloneForeign() {
 
     const unit = "cloneForeign";
     makeUnit(unit);
-    
-    result.tests++;
-    result.units[unit].tests++;
+    nextTest(unit);
     
     const inputA = "Molly";
     const expectedA = inputA;

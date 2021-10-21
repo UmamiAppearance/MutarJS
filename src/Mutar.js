@@ -335,7 +335,7 @@ class Mutar {
      * @param {(boolean|string)} [trim=false] - If true padded zeros according to the endianness get trimmed, if set to string "purge" all null bytes get discarded
      * @param {boolean} [preserveInt] - If true the individual integers keep the same (if they fit)
      * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false 
-     * @param {Object} [view] - Sometimes a view of the array is already defined. Pass it here. 
+     * @param {Object} [view] - If a view of the array is already defined, pass it here 
      * @returns {{ buffer: ArrayBufferLike; }} - The converted TypedArray
      */
     static convert(obj, type, trim=false, preserveInt=false, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
@@ -439,15 +439,20 @@ class Mutar {
      * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
      * @param {number} index - Positive or negative index key. Over- or underflow cannot happen.
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false
      * @returns {Array} - Returns the new TypedArray and the detached value
      */
-    static detach(obj, index) {
+    static detach(obj, index, littleEndian=SYS_LITTLE_ENDIAN) {
 
         index = Math.min(index, obj.length-1);
         let detached, newArray;
-        [newArray, detached] = Mutar.splice(obj, index, 1);
+        [newArray, detached] = Mutar.splice(obj, index, 1, littleEndian);
+        
+        const get = Utils.ViewMethods[obj.constructor.name].get;
+        const detachedView = new DataView(detached.buffer);
+        detached = detachedView[get](0, littleEndian);
 
-        return [newArray, detached[0]];
+        return [newArray, detached];
     }
 
 
@@ -480,7 +485,7 @@ class Mutar {
      * Pushes values to the end of a given array.
      * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
-     * @param  {...number} args - Positive or negative integers.
+     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {Array} - Returns the new TypedArray and the new array length
      */
     static push(obj, ...args) {
@@ -496,12 +501,17 @@ class Mutar {
      * int.
      * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false
+     * @param {Object} [view] - If a view of the array is already defined, pass it here
      * @returns {Array} - Returns the new TypedArray and the new array length
      * 
      */
-    static pop(obj) {
-
-        return [obj.slice(0, -1), obj.at(-1)];
+    static pop(obj, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
+        if (!view) view = new DataView(obj.buffer);
+        const get = Utils.ViewMethods[obj.constructor.name].get;
+        const lastIntIndex = (obj.length-1) * obj.BYTES_PER_ELEMENT;
+        const popped = view[get](lastIntIndex, littleEndian);
+        return [obj.slice(0, -1), popped];
     }
 
 
@@ -509,11 +519,10 @@ class Mutar {
      * Unshifts bytes to the beginning of a given array.
      * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
-     * @param  {...number} args - Positive or negative integers.
-     * @returns {Array} - Returns the new TypedArray and the n{{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }}
+     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
+     * @returns {Array} - Returns the new TypedArray and the new array length
      */
     static unshift(obj, ...args) {
-        
         const newArray = Mutar.splice(obj, 0, 0, ...args)[0];
         return [newArray, newArray.length];
     }
@@ -524,13 +533,18 @@ class Mutar {
      * Returns the new array and the removed
      * int.
      * 
-     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false
+     * @param {Object} [view] - If a view of the array is already defined, pass it here
      * @returns {Array} - Returns the new TypedArray and the new array length
      * 
      */
-    static shift(obj) {
+    static shift(obj, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
+        if (!view) view = new DataView(obj.buffer);
+        const get = Utils.ViewMethods[obj.constructor.name].get;
+        const shifted = view[get](0, littleEndian);
 
-        return [obj.slice(1), obj.at(0)];
+        return [obj.slice(1), shifted];
     }
 
 
@@ -738,11 +752,15 @@ class Mutar {
     /**
      * Calls Mutar.detach
      * @param {number} index - Positive or negative index key. Over- or underflow cannot happen.
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
      * @returns {number} - The detached integer
      */
-    detach(index) {
+    detach(index, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
         let detached;
-        [this.updateArray, detached] = this.constructor.detach(this.array, index)[1];
+        [this.updateArray, detached] = this.constructor.detach(this.array, index, this.littleEndian);
         return detached;
     }
 
@@ -751,7 +769,7 @@ class Mutar {
      * Calls Mutar.insert
      * @param {number} index - Positive or negative index key. Over- or underflow cannot happen. 
      * @param {number} integer - Positive or negative integer.
-     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false 
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
      * @returns {number} - The new length of the array
      */
     insert(index, integer, littleEndian=null) {
@@ -766,7 +784,7 @@ class Mutar {
 
     /**
      * Calls Mutar.push
-     * @param  {...number} args - Positive or negative integers. 
+     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {number} - The new length of the array
      */
     push(...args) {
@@ -781,18 +799,22 @@ class Mutar {
 
     /**
      * Calls Mutar.pop
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
      * @returns {number} - The popped integer
      */
-    pop() {
+    pop(littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
         let popped;
-        [this.updateArray, popped] = this.constructor.pop(this.array);
+        [this.updateArray, popped] = this.constructor.pop(this.array, littleEndian, this.view);
         return popped;
     }
 
 
     /**
      * Calls Mutar.unshift
-     * @param  {...number} args - Positive or negative integers
+     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {number} - The new length of the array
      */
     unshift(...args) {
@@ -807,11 +829,15 @@ class Mutar {
 
     /**
      * Calls Mutar.shift
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
      * @returns {number} - The shifted integer
      */
-    shift() {
+    shift(littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
         let shifted;
-        [this.updateArray, shifted] = this.constructor.shift(this.array);
+        [this.updateArray, shifted] = this.constructor.shift(this.array, littleEndian, this.view);
         return shifted;
     }
 
@@ -836,9 +862,12 @@ class Mutar {
     /**
      * Calls Mutar.trim
      * @param {boolean} [purge=false] - Set to true for removing all zero bytes
-     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - Endianness decides where zero padding can get removed (start or end of array) 
+     * @param {boolean} [littleEndian=this.littleEndian] - Endianness decides where zero padding can get removed (start or end of array) 
      */
-    trim(purge=false, littleEndian=SYS_LITTLE_ENDIAN) {
+    trim(purge=false, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
         this.updateArray = this.constructor.trim(this.array, purge, littleEndian);
     }
 }
