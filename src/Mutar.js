@@ -353,7 +353,7 @@ class Mutar {
         let newArray;
 
         // The following mode is looking at the individual
-        // integers. Lets take a look at th following example
+        // integers. Take a look at th following example
         // (big endian byte order, cause easier to read)
         //
         //      Uint16Array(2) [               200               400 ]
@@ -368,7 +368,6 @@ class Mutar {
         // The ArrayBuffer has now doubled in size, but the view (Uint32) has the same two values as the
         // initial Uint16Array.
         // There is no issue going up, the other direction can be problematic
-
 
         if (intMode) {
             
@@ -413,6 +412,16 @@ class Mutar {
                 nView[set](newOffset, val, littleEndian);
             }
 
+        
+        // The following regular mode is not changing the buffer
+        // if not necessary. If conversion is not possible, zeros
+        // are added to the end or the beginning of the buffer
+        // (depending on the endianness).
+        // 
+        // Example (Again BE):
+        // Uint8Array(3)  [   1 234 56 ]
+        // Uint32Array(1) [ 0 1 234 56 ] = 125496
+        //
         } else {
             const byteLen = obj.byteLength;
             const byteDiff = byteLen % Utils.ArrayTypes[type].BYTES_PER_ELEMENT;
