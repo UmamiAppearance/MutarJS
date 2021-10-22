@@ -418,7 +418,7 @@ class Mutar {
             const byteDiff = byteLen % Utils.ArrayTypes[type].BYTES_PER_ELEMENT;
             
 
-            // zero padding is not needed, zeros can get trimmed
+            // zero padding is not needed
             if (!byteDiff) {
                 newArray = new Utils.ArrayTypes[type](obj.buffer);
                 if (trim) {
@@ -429,21 +429,19 @@ class Mutar {
             } else {    
                 const missingBytes = Utils.ArrayTypes[type].BYTES_PER_ELEMENT - byteDiff;
                 const newLen = byteLen + missingBytes;
-                if (!view) view = new DataView(obj.buffer);
                 
                 // initialize a new Uint8Array of the required byte length
                 let Uint8 = new Uint8Array(newLen);
-                
-                // Fill the array with the values of the old array
-                // (little endian starts on the left hand side. 
-                // Insertion can start an 0. Big endian has a
-                // calculated starting point).
 
-                const start = (littleEndian) ? 0 : missingBytes;
-                for (let i=0, l=obj.byteLength; i<l; i++) {
-                    Uint8[i+start] = view.getUint8(i, littleEndian);
-                }
+                // create the requested view
                 newArray = new Utils.ArrayTypes[type](Uint8.buffer);
+                
+                // create a Uint8View if necessary
+                const Uint8ViewOrig = (obj.BYTES_PER_ELEMENT > 1) ? new Uint8Array(obj.buffer) : obj;
+                
+                // Define offset, based on the endianness
+                const offset = (littleEndian) ? 0 : missingBytes;
+                Uint8.set(Uint8ViewOrig, offset);
             }
         }
 
