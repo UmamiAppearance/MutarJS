@@ -117,7 +117,14 @@ const Utils = {
             get: "getBigUint64",
             set: "setBigUint64"
         }
-    }
+    },
+
+    IntegrityError: class IntegrityError extends Error {
+        constructor(message) {
+            super(message);
+            this.name = "IntegrityError";
+        }
+    },
 }
 
 const SYS_LITTLE_ENDIAN = Utils.getSysEndianness();
@@ -331,12 +338,12 @@ class Mutar {
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
      * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
      * @param {(boolean|string)} [trim=false] - If true padded zeros according to the endianness get trimmed, if set to string "purge" all null bytes get discarded
-     * @param {boolean} [preserveInt] - If true the individual integers keep the same (if they fit)
+     * @param {(boolean|string)} [intMode=false] - If true the individual integers keep the same (if they fit). If data loss is intended pass the string "force" 
      * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false 
      * @param {Object} [view] - If a view of the array is already defined, pass it here 
      * @returns {{ buffer: ArrayBufferLike; }} - The converted TypedArray
      */
-    static convert(obj, type, trim=false, preserveInt=false, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
+    static convert(obj, type, trim=false, intMode=false, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
 
         function num(n, bigInt) {
             return (bigInt) ? BigInt(n) : Number(n);
@@ -347,7 +354,7 @@ class Mutar {
 
         // The following mode is looking at the individual
         // integers. Lets take a look at th following example
-        // (big endian byte order)
+        // (big endian byte order, cause easier to read)
         //
         //      Uint16Array(2) [               200               400 ]
         //      Uint8Array(4)  [               200        1      144 ]
@@ -363,24 +370,44 @@ class Mutar {
         // There is no issue going up, the other direction can be problematic
 
 
-        if (preserveInt) {
+        if (intMode) {
             
             const curBytesPerElem = obj.BYTES_PER_ELEMENT;
             const newBytesPerElem = Utils.ArrayTypes[type].BYTES_PER_ELEMENT;
+
+            // Set the byte difference. A negative value
+            // means, that the new array is bigger and no
+            // data loss is to be feared, therefore set to
+            // zero (false).
+            const byteDiff = Math.max(curBytesPerElem-newBytesPerElem, 0);
+            const testIntegrity = (intMode !== "force" && byteDiff);
             
             if (!view) view = new DataView(obj.buffer);
 
             newArray = new Utils.ArrayTypes[type](obj.length);
             const nView = new DataView(newArray.buffer);
 
-            const get = Utils.ViewMethods[obj.constructor.name].get;
+            const getCur = Utils.ViewMethods[obj.constructor.name].get;
+            const getNew = Utils.ViewMethods[type].get;
             const set = Utils.ViewMethods[type].set;
 
             const bigInt = (newBytesPerElem > 7);
             
             for (let i=0; i<obj.length; i++) {
                 const curOffset = i * curBytesPerElem;
-                const val = num(view[get](curOffset, littleEndian), bigInt);
+                const val = num(view[getCur](curOffset, littleEndian), bigInt);
+
+                if (testIntegrity) {
+                    // Valid:
+                    // Uint16Array(2) [ 00000000 11001000 ] = 200
+                    // Uint8Array(1)  [          11001000 ] = 200
+                    //
+                    // Invalid:
+                    // Uint16Array(2) [00000001 10010000 ] = 400
+                    // Uint8Array(1)  [         10010000 ] = 144
+                    const expectedVal = num(view[getNew](curOffset, littleEndian), bigInt);
+                    if (val !== expectedVal) throw new Utils.IntegrityError("Converting the array will cause data loss. If you explicity want this, pass the string 'force' for intMode");
+                }
 
                 const newOffset = i * newBytesPerElem;
                 nView[set](newOffset, val, littleEndian);
@@ -732,11 +759,11 @@ class Mutar {
      * Calls Mutar.convert
      * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
      * @param {(boolean|string)} [trim=false] - If true, padded zeros according to the endianness get trimmed, if set to string "purge" all null bytes get discarded 
-     * @param {boolean} [preserveInt] - If true the individual integers keep the same (if they fit)
+     * @param {boolean} [intMode=false] - If true the individual integers keep the same (if they fit)
      */
-    convert(type, trim=false, preserveInt=false) {
+    convert(type, trim=false, intMode=false) {
         type = this.constructor.typeFromInput(type);
-        this.updateArray = this.constructor.convert(this.array, type, trim, preserveInt, this.littleEndian, this.view);
+        this.updateArray = this.constructor.convert(this.array, type, trim, intMode, this.littleEndian, this.view);
         this.type = type;
         this.typeConstructor = Utils.ArrayTypes[type];
     }
