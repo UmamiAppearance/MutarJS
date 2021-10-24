@@ -399,13 +399,13 @@ class Mutar {
                 if (testIntegrity) {
                     // Valid:
                     // Uint16Array(2) [ 00000000 11001000 ] = 200
-                    // Uint8Array(1)  [          11001000 ] = 200
+                    // Uint8Array(1)  [ -------- 11001000 ] = 200
                     //
                     // Invalid:
-                    // Uint16Array(2) [00000001 10010000 ] = 400
-                    // Uint8Array(1)  [         10010000 ] = 144
+                    // Uint16Array(2) [ 00000001 10010000 ] = 400
+                    // Uint8Array(1)  [ -------- 10010000 ] = 144
                     const expectedVal = num(view[getNew](curOffset, littleEndian), bigInt);
-                    if (val !== expectedVal) throw new Utils.IntegrityError("Converting the array will cause data loss. If you explicity want this, pass the string 'force' for intMode");
+                    if (val !== expectedVal) throw new Utils.IntegrityError("Converting the array will cause data loss. If you explicity want this, pass the string 'force' to param intMode");
                 }
 
                 const newOffset = i * newBytesPerElem;
@@ -422,6 +422,8 @@ class Mutar {
         // Uint8Array(3)  [   1 234 56 ]
         // Uint32Array(1) [ 0 1 234 56 ] = 125496
         //
+        // If the former Unit32Array is converted (back) to a
+        // Unit8Array the null byte can get trimmed.
         } else {
             const byteLen = obj.byteLength;
             const byteDiff = byteLen % Utils.ArrayTypes[type].BYTES_PER_ELEMENT;
