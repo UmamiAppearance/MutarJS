@@ -117,17 +117,17 @@ const Utils = {
             get: "getBigUint64",
             set: "setBigUint64"
         }
-    },
-
-    IntegrityError: class IntegrityError extends Error {
-        constructor(message) {
-            super(message);
-            this.name = "IntegrityError";
-        }
-    },
+    }
 }
 
 const SYS_LITTLE_ENDIAN = Utils.getSysEndianness();
+
+class IntegrityError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = "IntegrityError";
+    }
+}
 
 class Mutar {
 
@@ -211,6 +211,7 @@ class Mutar {
      * @returns {string} - Returns the name of the constructor (Uint8Array, Int16Array, ...) 
      */
     static getType(obj) {
+        
         return obj.constructor.name;
     }
 
@@ -405,7 +406,7 @@ class Mutar {
                     // Uint16Array(2) [ 00000001 10010000 ] = 400
                     // Uint8Array(1)  [ -------- 10010000 ] = 144
                     const expectedVal = num(view[getNew](curOffset, littleEndian), bigInt);
-                    if (val !== expectedVal) throw new Utils.IntegrityError("Converting the array will cause data loss. If you explicity want this, pass the string 'force' to param intMode");
+                    if (val !== expectedVal) throw new IntegrityError("Converting the array will cause data loss. If you explicity want this, pass the string 'force' to param intMode");
                 }
 
                 const newOffset = i * newBytesPerElem;
@@ -958,3 +959,4 @@ class Mutar {
 
 
 export default Mutar
+export {IntegrityError, Utils, SYS_LITTLE_ENDIAN}

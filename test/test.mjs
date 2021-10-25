@@ -1,6 +1,9 @@
 /* eslint-disable no-console */
 import Mutar from "../src/Mutar.js";
 
+const Encoder = new TextEncoder();
+const Decoder = new TextDecoder();
+
 const result = {
     tests: 0,
     errors: 0,
@@ -84,6 +87,7 @@ function objTests() {
 
     makeUnit(unit);
 
+
     // ------------------------------------------------ //
     // testConset - conset (tests concat either)
     // expect: complete string "Hello World!" after decoding
@@ -95,7 +99,7 @@ function objTests() {
     obj.conset(arrayToConcat);
 
     // Decode the array
-    const outputConset = new TextDecoder().decode(obj.array);
+    const outputConset = Decoder.decode(obj.array);
     const expectedConset = "Hello World!";
 
     if (outputConset !== expectedConset) {
@@ -107,6 +111,7 @@ function objTests() {
             expectedConset
         );
     }
+
 
     // ------------------------------------------------ //
     // testConvert - convert
@@ -120,9 +125,11 @@ function objTests() {
     
     obj.convert(Uint32Array);
     
-    // to avoid problems with endianness all uint32 integers are added up
-    // (which can be risky with bigger arrays -> integer overflow)
-    const outputConvert = obj.array[0] + obj.array[1] + obj.array[2];
+    // The view now has 3 Uint32 integers. Those are received
+    // in LE byte order and added up. The result must be 
+    // 4247253545
+
+    const outputConvert = obj.view.getUint32(0, true) + obj.view.getUint32(4, true) + obj.view.getUint32(8, true);
     const expectedConvert = 4247253545;
 
     if (outputConvert !== expectedConvert) {
@@ -134,6 +141,97 @@ function objTests() {
             "Addition of 3 Uint32 -> ".concat(expectedConvert)
         );
     }
+
+
+    // ------------------------------------------------ //
+    // testCloneEquality - clone the Mutar obj
+    // expect: A copy obj the whole object
+
+    const clone = obj.clone();
+    
+    const inputCloneEquality = JSON.stringify(obj);
+    const outputCloneEquality = JSON.stringify(clone);
+    const expectedCloneEquality = inputCloneEquality;
+
+    if (outputCloneEquality !== expectedCloneEquality) {
+        makeError(
+            unit,
+            "cloneEquality",
+            inputCloneEquality,
+            outputCloneEquality,
+            expectedCloneEquality
+        );
+    }
+
+
+    // ------------------------------------------------ //
+    // testConvertIntModeIntegrityError - convert intMode
+    // expect: IntegrityError
+
+    const inputConvertIntModeIntegrityError = `MutarUint32Array(${clone.array.join()})`;
+    const expectedConvertIntModeIntegrityError = "IntegrityError";
+    
+    let outputConvertIntModeIntegrityError = "NoError"; 
+
+    try {
+        clone.convert("Uint8", false, true);
+    } catch (e) {
+        outputConvertIntModeIntegrityError = e.name;
+    }
+
+    if (outputConvertIntModeIntegrityError !== expectedConvertIntModeIntegrityError) {
+        makeError(
+            unit,
+            "testConvertIntModeIntegrityError",
+            inputConvertIntModeIntegrityError,
+            outputConvertIntModeIntegrityError,
+            expectedConvertIntModeIntegrityError
+        );
+    }
+
+
+    // ------------------------------------------------ //
+    // testConvertIntModeForce - convert intMode forcing
+    // expect: string "Hor" after conversion and decoding
+
+    const inputConvertIntModeForce = `MutarUint32Array(${clone.array.join()})`;
+    const expectedConvertIntModeForce = "Hor";
+    
+    clone.convert("Uint8", false, "force");
+
+    const outputConvertIntModeForce = Decoder.decode(clone.array); 
+
+    if (outputConvertIntModeForce !== expectedConvertIntModeForce) {
+        makeError(
+            unit,
+            "testConvertIntModeForce",
+            inputConvertIntModeForce,
+            outputConvertIntModeForce,
+            expectedConvertIntModeForce
+        );
+    }
+
+    // ------------------------------------------------ //
+    // testConvertIntModeUp - convert intMode forcing
+    // expect: string "Hor" after conversion and decoding
+
+    const inputConvertIntModeUp = `MutarUint8Array(${clone.array.join()})`;
+    const expectedConvertIntModeUp = "Hor";
+    //TODO:
+    clone.convert("Uint8", false, "force");
+
+    const outputConvertIntModeUp = Decoder.decode(clone.array); 
+
+    if (outputConvertIntModeUp !== expectedConvertIntModeUp) {
+        makeError(
+            unit,
+            "testConvertIntModeUp",
+            inputConvertIntModeUp,
+            outputConvertIntModeUp,
+            expectedConvertIntModeUp
+        );
+    }
+
 
     // ------------------------------------------------ //
     // testConvertBig - convert way up, get one BigUint
@@ -164,7 +262,7 @@ function objTests() {
 
     const inputCovertBack = `MutarBigUint64Array(${obj.array.join()})`;
     obj.convert(Uint8Array, true);
-    const outputConvertBack = new TextDecoder().decode(obj.array);
+    const outputConvertBack = Decoder.decode(obj.array);
     
     if (outputConvertBack !== expectedConset) {
         makeError(
@@ -185,7 +283,7 @@ function objTests() {
     const inputPush = `MutarUint8Array(${obj.array.join()}).push(33)`
     obj.push(33);
     const expectedPush = "Hello World!!";
-    const outputPush = new TextDecoder().decode(obj.array);
+    const outputPush = Decoder.decode(obj.array);
 
     if (outputPush !== expectedPush) {
         makeError(
@@ -205,7 +303,7 @@ function objTests() {
 
     const inputPop = `MutarUint8Array(${obj.array.join()}).pop()`
     const popped = obj.pop();
-    const outputPop = new TextDecoder().decode(obj.array);
+    const outputPop = Decoder.decode(obj.array);
 
     if (!(outputPop === expectedConset && popped === 33)) {
         makeError(
@@ -226,7 +324,7 @@ function objTests() {
     const inputUnshift = `MutarUint8Array(${obj.array.join()}).unshift(33)`
     obj.unshift(33);
     const expectedUnshift = "!Hello World!";
-    const outputUnshift = new TextDecoder().decode(obj.array);
+    const outputUnshift = Decoder.decode(obj.array);
 
     if (outputUnshift !== expectedUnshift) {
         makeError(
@@ -246,7 +344,7 @@ function objTests() {
 
     const inputShift = `MutarUint8Array(${obj.array.join()}).shift()`
     const shifted = obj.shift();
-    const outputShift = new TextDecoder().decode(obj.array);
+    const outputShift = Decoder.decode(obj.array);
 
     if (!(outputPop === expectedConset && shifted === 33)) {
         makeError(
@@ -267,7 +365,7 @@ function objTests() {
     const inputBuildInAccess = `MutarUint8Array(${obj.array.join()}).reverse()`
     const reversed = obj.reverse();
 
-    const outputBuildInAccess = new TextDecoder().decode(reversed);
+    const outputBuildInAccess = Decoder.decode(reversed);
     const expectedBuildInAccess = "!dlroW olleH";
 
     if (outputBuildInAccess !== expectedBuildInAccess) {
@@ -293,8 +391,8 @@ function cloneForeign() {
     
     const inputA = "Molly";
     const expectedA = inputA;
-    const inputArr = new TextEncoder().encode(expectedA);
-    const decoder = new TextDecoder()
+    const inputArr = Encoder.encode(expectedA);
+    const decoder = Decoder
     const clone = Mutar.clone(inputArr);
 
     const outputA = decoder.decode(clone);
@@ -309,7 +407,7 @@ function cloneForeign() {
         makeError(
             unit,
             "staticClone",
-            `Mutar.clone(new TextEncoder().encode('${inputA}'))`,
+            `Mutar.clone(Encoder.encode('${inputA}'))`,
             `${outputA} && ${outputB} && ${outputC}`,
             `${expectedA} && ${expectedB} && ${expectedA}`
         );
