@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 /* eslint-disable no-console */
 import Mutar from "../src/Mutar.js";
 
@@ -82,8 +83,8 @@ function typeTests() {
 function objTests() {
     const unit = "object-tests";
     
-    // initialize object
-    const obj = new Mutar("Hello ");
+    // initialize object as little endian
+    const obj = new Mutar("Hello ", null, true);
 
     makeUnit(unit);
 
@@ -121,7 +122,7 @@ function objTests() {
 
     // convert the array to Uint32 and join to string
     
-    const inputConvert = `MutarUint8Array(${obj.array.join()})`;
+    const inputConvert = `MutarUint8Array(${obj.array.join()}).convert(Uint32Array)`;
     
     obj.convert(Uint32Array);
     
@@ -129,7 +130,7 @@ function objTests() {
     // in LE byte order and added up. The result must be 
     // 4247253545
 
-    const outputConvert = obj.view.getUint32(0, true) + obj.view.getUint32(4, true) + obj.view.getUint32(8, true);
+    const outputConvert = obj.view.getUint32(0, obj.littleEndian) + obj.view.getUint32(4, obj.littleEndian) + obj.view.getUint32(8, obj.littleEndian);
     const expectedConvert = 4247253545;
 
     if (outputConvert !== expectedConvert) {
@@ -146,6 +147,8 @@ function objTests() {
     // ------------------------------------------------ //
     // testCloneEquality - clone the Mutar obj
     // expect: A copy obj the whole object
+
+    nextTest(unit);
 
     const clone = obj.clone();
     
@@ -168,7 +171,9 @@ function objTests() {
     // testConvertIntModeIntegrityError - convert intMode
     // expect: IntegrityError
 
-    const inputConvertIntModeIntegrityError = `MutarUint32Array(${clone.array.join()})`;
+    nextTest(unit);
+
+    const inputConvertIntModeIntegrityError = `MutarUint32Array(${clone.array.join()}).convert("Uint8", false, true)`;
     const expectedConvertIntModeIntegrityError = "IntegrityError";
     
     let outputConvertIntModeIntegrityError = "NoError"; 
@@ -194,7 +199,9 @@ function objTests() {
     // testConvertIntModeForce - convert intMode forcing
     // expect: string "Hor" after conversion and decoding
 
-    const inputConvertIntModeForce = `MutarUint32Array(${clone.array.join()})`;
+    nextTest(unit);
+
+    const inputConvertIntModeForce = `MutarUint32Array(${clone.array.join()}).convert("Uint8", false, "force")`;
     const expectedConvertIntModeForce = "Hor";
     
     clone.convert("Uint8", false, "force");
@@ -212,15 +219,17 @@ function objTests() {
     }
 
     // ------------------------------------------------ //
-    // testConvertIntModeUp - convert intMode forcing
-    // expect: string "Hor" after conversion and decoding
+    // testConvertIntModeUp - convert Uint8 to Uint16 intMode 
+    // expect: 297 after adding up 3 Uint16 bytes
 
-    const inputConvertIntModeUp = `MutarUint8Array(${clone.array.join()})`;
-    const expectedConvertIntModeUp = "Hor";
-    //TODO:
-    clone.convert("Uint8", false, "force");
+    nextTest(unit);
 
-    const outputConvertIntModeUp = Decoder.decode(clone.array); 
+    const inputConvertIntModeUp = `MutarUint8Array(${clone.array.join()}).convert("Uint16", false, true)`;
+    const expectedConvertIntModeUp = 297;
+
+    clone.convert("Uint16", false, true);
+
+    const outputConvertIntModeUp = clone.view.getUint16(0, obj.littleEndian) + clone.view.getUint16(2, obj.littleEndian) + clone.view.getUint16(4, obj.littleEndian);
 
     if (outputConvertIntModeUp !== expectedConvertIntModeUp) {
         makeError(
@@ -234,12 +243,80 @@ function objTests() {
 
 
     // ------------------------------------------------ //
+    // testEndiannessChange - flipEndianness, get the first Uint16 integer as big endian (it is flipped back afterwards)
+    // expect: string "18432|72"
+
+    nextTest(unit);
+
+    const inputEndiannessChange = `MutarUint16Array(${clone.array.join()}).flipEndianness()`;
+    const expectedEndiannessChange = "18432|72";
+
+    let outputEndiannessChange = `${clone.view.getUint16(0, false)}|`;
+    clone.flipEndianness();
+    outputEndiannessChange = outputEndiannessChange.concat(String(clone.view.getUint16(0, false)));
+    clone.flipEndianness();
+
+    if (outputEndiannessChange !== expectedEndiannessChange) {
+        makeError(
+            unit,
+            "testEndiannessChange",
+            inputEndiannessChange,
+            outputEndiannessChange,
+            expectedEndiannessChange
+        );
+    }
+
+
+    // ------------------------------------------------ //
+    // testConvertIntModeBack - convert Uint16 back to Uint8 intMode 
+    // expect: former String "Hor" after converting back and decoding
+
+    nextTest(unit);
+
+    const inputConvertIntModeBack = `MutarUint16Array(${clone.array.join()}).convert("Uint8", false, true);`;
+
+    clone.convert("Uint8", false, true);
+
+    const outputConvertIntModeBack = Decoder.decode(clone.array);
+
+    if (outputConvertIntModeBack !== expectedConvertIntModeForce) {
+        makeError(
+            unit,
+            "testConvertIntModeBack",
+            inputConvertIntModeBack,
+            outputConvertIntModeBack,
+            expectedConvertIntModeForce
+        );
+    }
+
+
+    // ------------------------------------------------ //
+    // testObjIntegrityAfterCloneMod - test if original object is untouched since equality test
+    // expect: Inequality of clone and object
+
+    nextTest(unit);
+    
+    const outputObjIntegrityAfterCloneMod = JSON.stringify(obj);
+    const expectedObjIntegrityAfterCloneMod = inputCloneEquality;
+
+    if (outputObjIntegrityAfterCloneMod !== expectedObjIntegrityAfterCloneMod) {
+        makeError(
+            unit,
+            "objIntegrityAfterCloneMod",
+            inputCloneEquality,
+            outputObjIntegrityAfterCloneMod,
+            expectedObjIntegrityAfterCloneMod
+        );
+    }
+
+
+    // ------------------------------------------------ //
     // testConvertBig - convert way up, get one BigUint
     // expect: BigUint "8022916924116329800n" at byte 0 (little endian)
     
     nextTest(unit);
 
-    const inputCovertBig = `MutarUint32Array(${obj.array.join()})`;
+    const inputCovertBig = `MutarUint32Array(${obj.array.join()}).convert(BigUint64Array)`;
     obj.convert(BigUint64Array);
     const outputConvertBig = obj.view.getBigUint64(0, true);
     const expectedConvertUp = 8022916924116329800n;
@@ -260,7 +337,7 @@ function objTests() {
 
     nextTest(unit);
 
-    const inputCovertBack = `MutarBigUint64Array(${obj.array.join()})`;
+    const inputCovertBack = `MutarBigUint64Array(${obj.array.join()}).convert(Uint8Array, true)`;
     obj.convert(Uint8Array, true);
     const outputConvertBack = Decoder.decode(obj.array);
     
@@ -273,6 +350,50 @@ function objTests() {
             expectedConset
         );
     }
+
+
+    // ------------------------------------------------ //
+    // testDetach - detach
+    // expect: "Hello Word!" after detaching and decoding + detached int 108
+
+    nextTest(unit);
+
+    const inputDetach = `MutarUint8Array(${obj.array.join()}).detach(9))`
+    const detached = obj.detach(9);
+    const expectedDetach = "Hello Word!";
+    const outputDetach = Decoder.decode(obj.array);
+
+    if (!(outputDetach === expectedDetach && detached === 108)) {
+        makeError(
+            unit,
+            "detach",
+            inputDetach,
+            outputDetach,
+            expectedDetach
+        );
+    }
+
+
+    // ------------------------------------------------ //
+    // testInsert - insert
+    // expect: original expectConset "Hello World!"
+
+    nextTest(unit);
+
+    const inputInsert = `MutarUint8Array(${obj.array.join()}).insert(9, 108"))`
+    obj.insert(9, 108);
+    const outputInsert = Decoder.decode(obj.array);
+
+    if (outputInsert !== expectedConset) {
+        makeError(
+            unit,
+            "Insert",
+            inputInsert,
+            outputInsert,
+            expectedConset
+        );
+    }
+
 
     // ------------------------------------------------ //
     // testPush - push
