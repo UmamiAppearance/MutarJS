@@ -80,8 +80,8 @@ function typeTests() {
     }
 }
 
-function objTests() {
-    const unit = "object-tests";
+function objConversionTests() {
+    const unit = "object-conversions";
     
     // initialize object as little endian
     const obj = new Mutar("Hello ", null, true);
@@ -351,6 +351,39 @@ function objTests() {
         );
     }
 
+    // ------------------------------------------------ //
+    // testBuildInAccess - call build in function "reverse" from root
+    // expect: decoded "!dlroW olleH"
+    
+    nextTest(unit);
+
+    const inputBuildInAccess = `MutarUint8Array(${obj.array.join()}).reverse()`
+    const reversed = obj.reverse();
+
+    const outputBuildInAccess = Decoder.decode(reversed);
+    const expectedBuildInAccess = "!dlroW olleH";
+
+    if (outputBuildInAccess !== expectedBuildInAccess) {
+        makeError(
+            unit,
+            "buildInReverse",
+            inputBuildInAccess,
+            outputBuildInAccess,
+            expectedBuildInAccess
+        );
+    }
+}
+
+function objAddValDelVl(littleEndian) {
+    const unit = "object-add-remove-values";
+
+    // initialize test obj
+    const obj = new Mutar([100, 200, 300, 400, 500, 600, 700, 800], Uint32Array, littleEndian);
+    
+    // if the endianness differs from the one of the system, adjust the values 
+    if (littleEndian !== obj.SYS_LITTLE_ENDIAN) {
+        obj.flipEndianness(false);
+    }
 
     // ------------------------------------------------ //
     // testDetach - detach
@@ -358,8 +391,8 @@ function objTests() {
 
     nextTest(unit);
 
-    const inputDetach = `MutarUint8Array(${obj.array.join()}).detach(9))`
-    const detached = obj.detach(9);
+    const inputDetach = `MutarUint32Array(${obj.array.join()}).detach(4))`
+    const detached = obj.detach(4);
     const expectedDetach = "Hello Word!";
     const outputDetach = Decoder.decode(obj.array);
 
@@ -477,71 +510,12 @@ function objTests() {
         );
     }
 
-    // ------------------------------------------------ //
-    // testBuildInAccess - call build in function "reverse" from root
-    // expect: decoded "!dlroW olleH"
-    
-    nextTest(unit);
-
-    const inputBuildInAccess = `MutarUint8Array(${obj.array.join()}).reverse()`
-    const reversed = obj.reverse();
-
-    const outputBuildInAccess = Decoder.decode(reversed);
-    const expectedBuildInAccess = "!dlroW olleH";
-
-    if (outputBuildInAccess !== expectedBuildInAccess) {
-        makeError(
-            unit,
-            "buildInReverse",
-            inputBuildInAccess,
-            outputBuildInAccess,
-            expectedBuildInAccess
-        );
-    }
-}
-
-function cloneForeign() {
-    // Clone a foreign Uint8Array
-    // expect: - Same values on clone as on original, 
-    //         - modification should not impact original
-
-
-    const unit = "cloneForeign";
-    makeUnit(unit);
-    nextTest(unit);
-    
-    const inputA = "Molly";
-    const expectedA = inputA;
-    const inputArr = Encoder.encode(expectedA);
-    const decoder = Decoder
-    const clone = Mutar.clone(inputArr);
-
-    const outputA = decoder.decode(clone);
-    const subTest = (outputA === expectedA);
-    
-    clone[0] = 68;
-    const expectedB = "Dolly";
-    const outputB = decoder.decode(clone);
-    const outputC = decoder.decode(inputArr);
-
-    if (!(subTest && outputB === expectedB && outputC === expectedA)) {
-        makeError(
-            unit,
-            "staticClone",
-            `Mutar.clone(Encoder.encode('${inputA}'))`,
-            `${outputA} && ${outputB} && ${outputC}`,
-            `${expectedA} && ${expectedB} && ${expectedA}`
-        );
-    }
-
-    // make one version for both clones and call separately
 }
 
 
 function main() {
     typeTests();
-    objTests();
-    cloneForeign();
+    objConversionTests();
     
     console.log("results");
 

@@ -1,3 +1,4 @@
+/* eslint-disable no-undefined */
 /**
  * [Mutar]{@link https://github.com/UmamiAppearance/MutableTypedArrayJS}
  *
@@ -142,9 +143,9 @@ class Mutar {
      * @param {string|function} [type] - A string or TypedArray function that must be specified for buffer and regular arrays
      * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false
      */
-    constructor(input, type, littleEndian=SYS_LITTLE_ENDIAN) {
+    constructor(input, type, littleEndian=SYS_LITTLE_ENDIAN, adjustEndianness=false) {
 
-        this.littleEndian = littleEndian;
+        this.littleEndian = littleEndian; 
 
         // Strings are automatically converted to a Uint8Array.
         if (typeof(input) === "string") {
@@ -153,21 +154,22 @@ class Mutar {
         
         // If the input is a TypedArray, all information can
         // get read from that object.
-        if (ArrayBuffer.isView(input)) {
+        if (this.constructor.isTypedArray(input)) {
+            if (adjustEndianness) {
+                input = this.constructor.flipEndianness(input);
+            }
             this.updateArray = input;
             this.type = input.constructor.name;
-            this.typeConstructor = Utils.ArrayTypes[input.constructor.name];
 
         // If not the type must be specified and a new typed
         // array gets constructed based on the given information.
         } else if (input instanceof ArrayBuffer || Array.isArray(input)) {
             let error = true;
             if (type) {
-                type = Mutar.typeFromInput(type);
-                this.type = type;
-                this.typeConstructor = Utils.ArrayTypes[type];
+                this.type = Mutar.typeFromInput(type);
+                const typeConstructor = Utils.ArrayTypes[this.type];
                 if (input instanceof ArrayBuffer || Array.isArray(input)) {
-                    this.updateArray = new this.typeConstructor(input);
+                    this.updateArray = new typeConstructor(input);
                     error = false;
                 }
             }
@@ -923,12 +925,31 @@ class Mutar {
         }
         this.updateArray = this.constructor.trim(this.array, purge, littleEndian);
     }
+
+    at(index, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+        index = Number(index);
+        if (isNaN(index)) {
+            index = 0;
+        } else if (index < 0) {
+            index = this.length + index;
+            if (index < 0) {
+                return undefined;
+            }
+        } else if (index >= this.length) {
+            return undefined;
+        }
+        const get = Utils.ViewMethods[this.type].get;
+        const offset = index * this.BYTES_PER_ELEMENT;
+        return this.view[get](offset, littleEndian);
+    }
 }
 
 
 // make build in array methods accessible at root
 [
-    "at",
     "copyWithin",
     "entries",
     "every",
