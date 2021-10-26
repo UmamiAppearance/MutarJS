@@ -734,13 +734,39 @@ class Mutar {
 
 
     /**
-     * Returns a clone of the current array.
-     * The ArrayBuffer is not shared.
-     * 
-     * @returns {{ buffer: ArrayBufferLike; }} - A clone of the current array.
+     * Endian aware Array.at
+     * @param {number} start - Positive or negative index key.
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
      */
-    extractArrayClone() {
-        return this.array.slice();
+    at(index, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+        index = Number(index);
+        if (isNaN(index)) {
+            index = 0;
+        } else if (index < 0) {
+            index = this.length + index;
+            if (index < 0) {
+                return undefined;
+            }
+        } else if (index >= this.length) {
+            return undefined;
+        }
+        const get = Utils.ViewMethods[this.type].get;
+        const offset = index * this.BYTES_PER_ELEMENT;
+        return this.view[get](offset, littleEndian);
+    }
+
+
+    /**
+     * Returns a clone of the Mutar object. The ArrayBuffer
+     * of the array is not shared with the original.
+     * 
+     * @returns {Object} - A independent copy of the current Mutar object 
+     */
+    clone() {  
+        return new Mutar(this.array.slice());
     }
     
 
@@ -753,18 +779,6 @@ class Mutar {
         const array = this.constructor.concat(this.array, ...args);
         return new Mutar(array);
     }
-
-
-    /**
-     * Concat and set the array to the concatenated array.
-     * (Same as concat, but replaces the existing array)
-     * 
-     * @param  {(...buffer|string[])} args - At least one Typed array for concatenation. Additionally takes the strings "force" and "trim"
-     */
-    conset(arr) {
-        
-        this.updateArray = this.concat(arr).array;
-    } 
 
 
     /**
@@ -782,26 +796,14 @@ class Mutar {
 
 
     /**
-     * Returns a clone of the Mutar object. The ArrayBuffer
-     * of the array is not shared with the original.
+     * Concat and set the array to the concatenated array.
+     * (Same as concat, but replaces the existing array)
      * 
-     * @returns {Object} - A independent copy of the current Mutar object 
+     * @param  {(...buffer|string[])} args - At least one Typed array for concatenation. Additionally takes the strings "force" and "trim"
      */
-    clone() {  
-        return new Mutar(this.array.slice());
-    }
-
-
-    /**
-     * Calls Mutar.flipEndianness
-     * @param {boolean} [changeProperty=true] - If not set to false, the value obj.littleEndian changes (true->false/false->true) 
-     */
-    flipEndianness(changeProperty=true) {
-        this.updateArray = this.constructor.flipEndianness(this.array);
-        if (changeProperty) {
-            this.littleEndian = !this.littleEndian;
-        }
-    }
+    conset(arr) {     
+        this.updateArray = this.concat(arr).array;
+    } 
 
 
     /**
@@ -817,6 +819,32 @@ class Mutar {
         let detached;
         [this.updateArray, detached] = this.constructor.detach(this.array, index, this.littleEndian);
         return detached;
+    }
+
+
+    // TODO:
+    // entries(littleEndian)
+
+
+    /**
+     * Returns a clone of the current array.
+     * The ArrayBuffer is not shared.
+     * 
+     * @returns {{ buffer: ArrayBufferLike; }} - A clone of the current array.
+     */
+    extractArrayClone() {
+        return this.array.slice();
+    }
+
+    /**
+     * Calls Mutar.flipEndianness
+     * @param {boolean} [changeProperty=true] - If not set to false, the value obj.littleEndian changes (true->false/false->true) 
+     */
+    flipEndianness(changeProperty=true) {
+        this.updateArray = this.constructor.flipEndianness(this.array);
+        if (changeProperty) {
+            this.littleEndian = !this.littleEndian;
+        }
     }
 
 
@@ -837,18 +865,29 @@ class Mutar {
     }
 
 
-    /**
-     * Calls Mutar.push
-     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
-     * @returns {number} - The new length of the array
-     */
-    push(...args) {
-        if (typeof(args.at(-1)) !== "boolean") {
-            args.push(this.littleEndian);
+    map(callback, thisArg, littleEndian=null) {
+        if (thisArg) {
+            callback = callback.bind(thisArg);
         }
-        let len;
-        [this.updateArray, len] = this.constructor.push(this.array, ...args);
-        return len;
+
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+
+        const newArray = new Utils.ArrayTypes[this.type](this.length);
+        const newView = new DataView(newArray.buffer);
+
+        for (let i=0; i<this.array.length; i++) {
+            const methods = Utils.ViewMethods[this.type];
+            const offset = i*this.BYTES_PER_ELEMENT;
+            const elem = this.view[methods.get](offset, littleEndian);
+
+            const val = parseInt(callback(elem, i, this.array), 10) || 0;
+            
+            newView[methods.set](offset, val, littleEndian);
+        }
+
+        return newArray;
     }
 
 
@@ -868,16 +907,16 @@ class Mutar {
 
 
     /**
-     * Calls Mutar.unshift
+     * Calls Mutar.push
      * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {number} - The new length of the array
      */
-    unshift(...args) {
+    push(...args) {
         if (typeof(args.at(-1)) !== "boolean") {
             args.push(this.littleEndian);
         }
         let len;
-        [this.updateArray, len] = this.constructor.unshift(this.array, ...args);
+        [this.updateArray, len] = this.constructor.push(this.array, ...args);
         return len;
     }
 
@@ -894,6 +933,19 @@ class Mutar {
         let shifted;
         [this.updateArray, shifted] = this.constructor.shift(this.array, littleEndian, this.view);
         return shifted;
+    }
+
+
+    /**
+     * Calls Mutar.trim
+     * @param {boolean} [purge=false] - Set to true for removing all zero bytes
+     * @param {boolean} [littleEndian=this.littleEndian] - Endianness decides where zero padding can get removed (start or end of array) 
+     */
+    trim(purge=false, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+        this.updateArray = this.constructor.trim(this.array, purge, littleEndian);
     }
 
 
@@ -915,35 +967,17 @@ class Mutar {
 
 
     /**
-     * Calls Mutar.trim
-     * @param {boolean} [purge=false] - Set to true for removing all zero bytes
-     * @param {boolean} [littleEndian=this.littleEndian] - Endianness decides where zero padding can get removed (start or end of array) 
+     * Calls Mutar.unshift
+     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
+     * @returns {number} - The new length of the array
      */
-    trim(purge=false, littleEndian=null) {
-        if (littleEndian === null) {
-            littleEndian = this.littleEndian;
+    unshift(...args) {
+        if (typeof(args.at(-1)) !== "boolean") {
+            args.push(this.littleEndian);
         }
-        this.updateArray = this.constructor.trim(this.array, purge, littleEndian);
-    }
-
-    at(index, littleEndian=null) {
-        if (littleEndian === null) {
-            littleEndian = this.littleEndian;
-        }
-        index = Number(index);
-        if (isNaN(index)) {
-            index = 0;
-        } else if (index < 0) {
-            index = this.length + index;
-            if (index < 0) {
-                return undefined;
-            }
-        } else if (index >= this.length) {
-            return undefined;
-        }
-        const get = Utils.ViewMethods[this.type].get;
-        const offset = index * this.BYTES_PER_ELEMENT;
-        return this.view[get](offset, littleEndian);
+        let len;
+        [this.updateArray, len] = this.constructor.unshift(this.array, ...args);
+        return len;
     }
 }
 
@@ -963,7 +997,6 @@ class Mutar {
     "join",
     "keys",
     "lastIndexOf",
-    "map",
     "reduce",
     "reduceRight",
     "reverse",
