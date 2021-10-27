@@ -825,17 +825,36 @@ class Mutar {
     // TODO:
     // entries(littleEndian)
 
+
     /**
-     * 
+     * Endian aware TypedArray.map
      * @param {function} callback - A function to call. 
      * @param {Object} thisArg - This object for the callback.
-     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     * @returns {{ buffer: ArrayBufferLike; }} - A new typed Array
      */
     every(callback, thisArg, littleEndian=null) {
+        if (thisArg) {
+            callback = callback.bind(thisArg);
+        }
+
         if (littleEndian === null) {
             littleEndian = this.littleEndian;
         }
+
+        const get = Utils.ViewMethods[this.type].get;
+
+        for (let i=0; i<this.array.length; i++) {
+            const offset = i*this.BYTES_PER_ELEMENT;
+            const elem = this.view[get](offset, littleEndian);
+
+            if (!(Boolean(callback(elem, i, this.array), 10) || 0)) {
+                return false;
+            }
+        }
+        return true;
     }
+
 
     /**
      * Returns a clone of the current array.
@@ -903,9 +922,9 @@ class Mutar {
 
         const newArray = new Utils.ArrayTypes[this.type](this.length);
         const newView = new DataView(newArray.buffer);
-
+        const methods = Utils.ViewMethods[this.type];
+        
         for (let i=0; i<this.array.length; i++) {
-            const methods = Utils.ViewMethods[this.type];
             const offset = i*this.BYTES_PER_ELEMENT;
             const elem = this.view[methods.get](offset, littleEndian);
 
@@ -1013,7 +1032,6 @@ class Mutar {
 [
     "copyWithin",
     "entries",
-    "every",
     "fill",
     "filter",
     "find",
