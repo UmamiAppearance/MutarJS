@@ -734,7 +734,7 @@ class Mutar {
 
 
     /**
-     * Endian aware Array.at
+     * Endian aware TypedArray.at
      * @param {number} start - Positive or negative index key.
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
      */
@@ -825,6 +825,17 @@ class Mutar {
     // TODO:
     // entries(littleEndian)
 
+    /**
+     * 
+     * @param {function} callback - A function to call. 
+     * @param {Object} thisArg - This object for the callback.
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
+     */
+    every(callback, thisArg, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+    }
 
     /**
      * Returns a clone of the current array.
@@ -847,6 +858,16 @@ class Mutar {
         }
     }
 
+    /**
+     * Endian aware TypedArray.forEach
+     * @param {function} callback - A function to call. 
+     * @param {Object} thisArg - This object for the callback.
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
+     */
+    forEach(callback, thisArg, littleEndian=null) {
+        this.map(callback, thisArg, littleEndian);
+    }
+
 
     /**
      * Calls Mutar.insert
@@ -864,7 +885,13 @@ class Mutar {
         return len;
     }
 
-
+    /**
+     * Endian aware TypedArray.map
+     * @param {function} callback - A function to call. 
+     * @param {Object} thisArg - This object for the callback.
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     * @returns {{ buffer: ArrayBufferLike; }} - A new typed Array
+     */
     map(callback, thisArg, littleEndian=null) {
         if (thisArg) {
             callback = callback.bind(thisArg);
@@ -991,7 +1018,6 @@ class Mutar {
     "filter",
     "find",
     "findIndex",
-    "forEach",
     "includes",
     "indexOf",
     "join",
