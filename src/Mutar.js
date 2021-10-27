@@ -475,15 +475,27 @@ class Mutar {
         const bytesPerElem = obj.constructor.BYTES_PER_ELEMENT 
         if (bytesPerElem > 1) {
             const singleBytesView = new Uint8Array(obj.buffer);
-            for (let i=0, l=obj.byteLength; i<l; i+=bytesPerElem) {
+            for (let i=0; i<obj.byteLength; i+=bytesPerElem) {
                 singleBytesView.subarray(i, i+bytesPerElem).reverse();
             }
-        } else {
-            // reverse the array
-            obj.reverse();
         }
-
         return obj;
+    }
+
+
+    /**
+     * 
+     * @param {integer} - A regular integer 
+     * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
+     * @returns {integer} - The flipped integer
+     */
+    static flipEndiannessInt(int, type) {
+
+        type = Mutar.typeFromInput(type);
+        const array = new Utils.ArrayTypes[type](1)
+        array[0] = int;
+        Mutar.flipEndianness(array);
+        return array[0];
     }
 
 
@@ -822,16 +834,12 @@ class Mutar {
     }
 
 
-    // TODO:
-    // entries(littleEndian)
-
-
     /**
-     * Endian aware TypedArray.map
+     * Endian aware TypedArray.every
      * @param {function} callback - A function to call. 
      * @param {Object} thisArg - This object for the callback.
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
-     * @returns {{ buffer: ArrayBufferLike; }} - A new typed Array
+     * @returns {boolean} - True all calls are true
      */
     every(callback, thisArg, littleEndian=null) {
         if (thisArg) {
@@ -848,7 +856,7 @@ class Mutar {
             const offset = i*this.BYTES_PER_ELEMENT;
             const elem = this.view[get](offset, littleEndian);
 
-            if (!(Boolean(callback(elem, i, this.array), 10) || 0)) {
+            if (!callback(elem, i, this.array)) {
                 return false;
             }
         }
@@ -864,6 +872,16 @@ class Mutar {
      */
     extractArrayClone() {
         return this.array.slice();
+    }
+
+    fill(value, start, end, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+        if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
+            value = this.constructor.flipEndiannessInt(value, this.type);
+        }
+        return this.array.fill(value, start, end);
     }
 
     /**
@@ -888,6 +906,18 @@ class Mutar {
     }
 
 
+    includes(searchElement, fromIndex, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+        if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
+            searchElement = this.constructor.flipEndiannessInt(searchElement, this.type);
+        }
+        
+        return this.array.includes(searchElement, fromIndex);
+    }
+
+
     /**
      * Calls Mutar.insert
      * @param {number} index - Positive or negative index key. Over- or underflow cannot happen. 
@@ -903,6 +933,19 @@ class Mutar {
         [this.updateArray, len] = this.constructor.insert(this.array, index, integer, this.littleEndian);
         return len;
     }
+
+
+    lastIndexOf(searchElement, fromIndex, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+        if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
+            searchElement = this.constructor.flipEndiannessInt(searchElement, this.type);
+        }
+        
+        return this.array.lastIndexOf(searchElement, fromIndex);
+    }
+
 
     /**
      * Endian aware TypedArray.map
@@ -983,15 +1026,32 @@ class Mutar {
 
 
     /**
-     * Calls Mutar.trim
-     * @param {boolean} [purge=false] - Set to true for removing all zero bytes
-     * @param {boolean} [littleEndian=this.littleEndian] - Endianness decides where zero padding can get removed (start or end of array) 
+     * Endian aware TypedArray.some
+     * @param {function} callback - A function to call. 
+     * @param {Object} thisArg - This object for the callback.
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     * @returns {boolean} - True if at least one call returns true
      */
-    trim(purge=false, littleEndian=null) {
+    some(callback, thisArg, littleEndian=null) {
+        if (thisArg) {
+            callback = callback.bind(thisArg);
+        }
+
         if (littleEndian === null) {
             littleEndian = this.littleEndian;
         }
-        this.updateArray = this.constructor.trim(this.array, purge, littleEndian);
+
+        const get = Utils.ViewMethods[this.type].get;
+
+        for (let i=0; i<this.array.length; i++) {
+            const offset = i*this.BYTES_PER_ELEMENT;
+            const elem = this.view[get](offset, littleEndian);
+
+            if (callback(elem, i, this.array)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -1013,6 +1073,19 @@ class Mutar {
 
 
     /**
+     * Calls Mutar.trim
+     * @param {boolean} [purge=false] - Set to true for removing all zero bytes
+     * @param {boolean} [littleEndian=this.littleEndian] - Endianness decides where zero padding can get removed (start or end of array) 
+     */
+    trim(purge=false, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+        this.updateArray = this.constructor.trim(this.array, purge, littleEndian);
+    }
+
+
+    /**
      * Calls Mutar.unshift
      * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {number} - The new length of the array
@@ -1025,29 +1098,60 @@ class Mutar {
         [this.updateArray, len] = this.constructor.unshift(this.array, ...args);
         return len;
     }
+
+
+    /**
+     * Endian aware TypedArray.entries
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     * @returns {Object} - A generator
+     */
+    *entries(littleEndian=null) {
+        const array = this.values(littleEndian);
+        let i = 0;
+
+        for (const val of array) {
+            const pair = [i, val];
+            yield pair;
+            i++;
+        }
+    }
+
+
+    /**
+     * Endian aware TypedArray.values
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     * @returns {Object} - A generator
+     */
+    *values(littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+
+        const get = Utils.ViewMethods[this.type].get;
+        
+        for (let i=0; i<this.array.length; i++) {
+            const offset = i*this.BYTES_PER_ELEMENT;
+            const elem = this.view[get](offset, littleEndian);
+            yield elem;
+        }
+    }
 }
 
 
 // make build in array methods accessible at root
 [
-    "copyWithin",
-    "entries",
-    "fill",
+    "copyWithin", // stays
     "filter",
     "find",
     "findIndex",
-    "includes",
     "indexOf",
     "join",
-    "keys",
-    "lastIndexOf",
+    "keys", // stays
     "reduce",
     "reduceRight",
-    "reverse",
-    "slice",
-    "some",
+    "reverse", // stays
+    "slice", // stays
     "sort",
-    "values",
 ].forEach((fn) => {
     // eslint-disable-next-line no-new-func
     const method = new Function("...args", `return this.array.${fn}(...args)`);
