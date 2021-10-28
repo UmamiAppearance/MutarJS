@@ -884,6 +884,31 @@ class Mutar {
         return this.array.fill(value, start, end);
     }
 
+
+    filter(callback, thisArg, littleEndian=null) {
+        if (littleEndian === null) {
+            littleEndian = this.littleEndian;
+        }
+        
+        const precursor = [];
+
+        function callbackDecorator(elem, i, array) {
+            if (callback(elem, i, array)) {
+                precursor.push(elem);
+            }
+        }
+
+        this.map(callbackDecorator, thisArg, littleEndian);
+
+        const newArray = Utils.ArrayTypes[this.type].from(precursor);
+        if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
+            this.constructor.flipEndianness(newArray);
+        }
+
+        return newArray;
+    }
+
+    
     /**
      * Calls Mutar.flipEndianness
      * @param {boolean} [changeProperty=true] - If not set to false, the value obj.littleEndian changes (true->false/false->true) 
@@ -1036,7 +1061,6 @@ class Mutar {
         if (thisArg) {
             callback = callback.bind(thisArg);
         }
-
         if (littleEndian === null) {
             littleEndian = this.littleEndian;
         }
@@ -1141,7 +1165,6 @@ class Mutar {
 // make build in array methods accessible at root
 [
     "copyWithin", // stays
-    "filter",
     "find",
     "findIndex",
     "indexOf",
