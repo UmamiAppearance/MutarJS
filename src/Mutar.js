@@ -1,4 +1,3 @@
-/* eslint-disable no-undefined */
 /**
  * [Mutar]{@link https://github.com/UmamiAppearance/MutableTypedArrayJS}
  *
@@ -20,7 +19,7 @@
  * Float64. Also zero padding can get trimmed. 
  */
 
-
+/* eslint-disable no-undefined */
 /* eslint-disable prefer-destructuring */
 
 const Utils = {
@@ -187,7 +186,6 @@ class Mutar {
 
     /** 
      * Extract the type from a TypedArray constructor
-     * 
      * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
      * @returns {string} - The name of the TypedArray constructor as string e.g. "Int8Array"
      */ 
@@ -208,56 +206,63 @@ class Mutar {
 
     /**
      * Get Type from "obj.constructor.name"
-     * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
      * @returns {string} - Returns the name of the constructor (Uint8Array, Int16Array, ...) 
      */
     static getType(obj) {
-        
         return obj.constructor.name;
     }
 
     
     /**
      * Test if object is a typed array.
-     * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
      * @returns {boolean} - Only true if input object is a TypedArray
      */
     static isTypedArray(obj) {
-
         return obj.constructor.name in Utils.ArrayTypes;
     }
 
 
     /**
      * Test if array is of type "type"
-     * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Should be a TypedArray, but any object can get tested for the following name as string
      * @param {string} type - The constructor name the former arg gets tested against. 
      * @returns {boolean} - True if "obj.constructor.name" equals "type" 
      */
     static isTypeOf(obj, type) {
-
         type = Mutar.typeFromInput(type);
         return obj.constructor.name === type;
     }
 
 
     /**
-     * Make a copy of the given array
+     * Creates a new Mutar object from various inputs
+     * (equivalent to "new Mutar")
      * 
+     * @param {({ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; } | number[] | string)} input - Mut be set. Can be a TypedArray, a string or buffer and regular array
+     * @param {string|function} [type] - A string or TypedArray function that must be specified for buffer and regular arrays
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - Optional. A boolean that sets little endian to true/false 
+     * @param {boolean} [adjustEndianness=false] - Optional. If true, the endianness of the input bytes are getting flipped    
+     * @returns {Object} - A new Mutar object
+     */
+    static from(input, type, littleEndian=SYS_LITTLE_ENDIAN, adjustEndianness=false) {
+        return new Mutar(input, type, littleEndian, adjustEndianness);
+    }
+
+
+    /**
+     * Make a copy of the given array
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Should be a TypedArray, if you really want to u can clone regular arrays either
      * @returns {{ buffer: ArrayBufferLike; }} - A unrelated copy of the input object
      */
     static clone(obj) {
-
         return obj.slice();
     }
 
 
     /**
-     * Concatenates all given array into one. 
+     * Concatenates all given arrays into one. 
      * By default they must be of the same type
      * but conversion to the type of the first
      * element can be forced, by literally passing
@@ -360,12 +365,12 @@ class Mutar {
         // (big endian byte order, cause easier to read)
         //
         //      Uint16Array(2) [               200               400 ]
-        //      Uint8Array(4)  [               200        1      144 ]
+        //      Uint8Array(4)  [        0      200        1      144 ]
         //      Binary         [ 00000000 11001000 00000001 10010000 ]
         //
         // Converted to Uint32:
-        //      Binary         [ 00000000 00000000 00000000 11001000 00000000 00000000 10010000 00000001 ]
-        //      Uint8Array(8)  [        0        0        0      200        0        0      144        1 ]
+        //      Binary         [ 00000000 00000000 00000000 11001000 00000000 00000000 00000001 10010000 ]
+        //      Uint8Array(8)  [        0        0        0      200        0        0        1      144 ]
         //      Uint32Array(2) [                                 200                                 400 ]        
         // 
         // The ArrayBuffer has now doubled in size, but the view (Uint32) has the same two values as the
@@ -484,10 +489,10 @@ class Mutar {
 
 
     /**
-     * 
-     * @param {integer} - A regular integer 
+     * Switches between little and big endian
+     * @param {number} - A regular integer 
      * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
-     * @returns {integer} - The flipped integer
+     * @returns {number} - The flipped integer
      */
     static flipEndiannessInt(int, type) {
 
@@ -525,7 +530,6 @@ class Mutar {
 
     /**
      * Inserts a value at the given index.
-     * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
      * @param {number} index - Positive or negative index key. Over- or underflow cannot happen. 
      * @param {number} integer - Positive or negative integer.
@@ -550,7 +554,6 @@ class Mutar {
 
     /**
      * Pushes values to the end of a given array.
-     * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
      * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {Array} - Returns the new TypedArray and the new array length
@@ -584,7 +587,6 @@ class Mutar {
 
     /**
      * Unshifts bytes to the beginning of a given array.
-     * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
      * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {Array} - Returns the new TypedArray and the new array length
@@ -679,7 +681,7 @@ class Mutar {
     /**
      * Can safely remove zero padding, if purge
      * is true, all null bytes get removed. This
-     * will destroy data integrity in many cases.
+     * will destroy data integrity in most cases.
      *  
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
      * @param {boolean} [purge=false] - Set to true for removing all zero bytes
@@ -718,7 +720,7 @@ class Mutar {
     }
 
 
-    // ----------------- > instance methods < ----------------- //
+    // ----------------- > setters & getters < ----------------- //
 
     /**
      * Setter for refreshing the object after the
@@ -736,13 +738,18 @@ class Mutar {
         this.BYTES_PER_ELEMENT = typedArray.BYTES_PER_ELEMENT;
     }
 
+    get [Symbol.species]() {
+        return Utils.ArrayTypes[this.type];
+    }
 
     /**
-     * Getter to check the systems endianness
+     * Getter to determine the systems endianness
      */
     get SYS_LITTLE_ENDIAN() {
         return SYS_LITTLE_ENDIAN;
     }
+
+    // ----------------- > private helper methods < ----------------- //
 
     #determineEndiannessHelper(littleEndian) {
         if (littleEndian === null) {
@@ -790,6 +797,7 @@ class Mutar {
         }
     }
 
+    // ----------------- > instance methods < ----------------- //
 
     /**
      * Endian aware TypedArray.at
@@ -847,7 +855,6 @@ class Mutar {
         type = this.constructor.typeFromInput(type);
         this.updateArray = this.constructor.convert(this.array, type, trim, intMode, this.littleEndian, this.view);
         this.type = type;
-        this.typeConstructor = Utils.ArrayTypes[type];
         return this.array;
     }
 
@@ -860,7 +867,18 @@ class Mutar {
      */
     conset(arr) {     
         this.updateArray = this.concat(arr).array;
-    } 
+    }
+
+    /**
+     * TypedArray.copyWithin routed to the array
+     * @param {number} target - Target start index position where to copy the elements to
+     * @param {number} start - Source start index position where to start copying elements from
+     * @param {number} [end] - Optional. Source end index position where to end copying elements from
+     * @returns {{ buffer: ArrayBufferLike; }} - The modified array
+     */
+    copyWithin(target, start, end) {
+        return this.array(target, start, end);
+    }
 
 
     /**
@@ -910,16 +928,18 @@ class Mutar {
      * 
      * @returns {{ buffer: ArrayBufferLike; }} - A clone of the current array.
      */
-    extractArrayClone() {
-        return this.array.slice();
+    extractArrayClone(toSysEndianness=false) {
+        const clone = this.array.slice();
+        if (toSysEndianness && this.littleEndian !== this.SYS_LITTLE_ENDIAN) {
+            this.constructor.flipEndianness(clone)
+        }
+        return clone;
     }
 
 
     fill(value, start, end, littleEndian=null) {
-        if (littleEndian === null) {
-            littleEndian = this.littleEndian;
-        }
-        if (convertlittleEndian !== this.SYS_LITTLE_ENDIAN) {
+        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
             value = this.constructor.flipEndiannessInt(value, this.type);
         }
         return this.array.fill(value, start, end);
@@ -953,7 +973,7 @@ class Mutar {
      * @param {function} callback - A function to call. 
      * @param {Object} thisArg - "this" object for the callback.
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
-     * @returns {integer} - The integer of the match, "undefined" if no match
+     * @returns {number} - The integer of the match, "undefined" if no match
      */
     find(callback, thisArg, littleEndian=null) {
         return this.#someFindHelper(callback, thisArg, littleEndian).value;
@@ -965,7 +985,7 @@ class Mutar {
      * @param {function} callback - A function to call. 
      * @param {Object} thisArg - "this" object for the callback.
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
-     * @returns {integer} - The index of the match, -1 if no match
+     * @returns {number} - The index of the match, -1 if no match
      */
      findIndex(callback, thisArg, littleEndian=null) {
         return this.#someFindHelper(callback, thisArg, littleEndian).index;
@@ -974,14 +994,16 @@ class Mutar {
 
     /**
      * Calls Mutar.flipEndianness
-     * @param {boolean} [changeProperty=true] - If not set to false, the value obj.littleEndian changes (true->false/false->true) 
+     * @param {boolean} [changeProperty=true] - If not set to false, the boolean obj.littleEndian flips either 
      */
     flipEndianness(changeProperty=true) {
         this.updateArray = this.constructor.flipEndianness(this.array);
         if (changeProperty) {
             this.littleEndian = !this.littleEndian;
         }
+        return this.array;
     }
+
 
     /**
      * Endian aware TypedArray.forEach
@@ -1031,6 +1053,7 @@ class Mutar {
         return len;
     }
 
+
     /**
      * 
      * @param {string} separator - All values are concatenated to a string and separated by this string 
@@ -1042,6 +1065,15 @@ class Mutar {
     }
 
 
+    /**
+     * TypedArray.keys routed to the array
+     * @returns {Object} - An iterator
+     */
+    keys() {
+        return this.array.keys();
+    }
+
+    
     /**
      * Endian aware TypedArray.lastIndexOf
      * @param {number} searchElement - The integer to search for 
@@ -1111,6 +1143,37 @@ class Mutar {
         return len;
     }
 
+    /**
+     * Endian aware TypedArray.reduce
+     * @param {function} callback - Function to execute on each value in the typed array, taking four arguments 
+     * @param {*} [initialValue] - Object to use as the first argument to the first call of the callback  
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     * @returns {*} - The value that results from the reduction
+     */
+    reduce(callback, initialValue, littleEndian=null) {
+        return [...this.values(littleEndian)].reduce(callback, initialValue);
+    }
+
+    /**
+     * Endian aware TypedArray.reduceRight
+    * @param {function} callback - Function to execute on each value in the typed array, taking four arguments 
+     * @param {*} [initialValue] - Object to use as the first argument to the first call of the callback  
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     * @returns {*} - The value that results from the reduction
+     */
+    reduceRight(callback, initialValue, littleEndian=null) {
+        return [...this.values(littleEndian)].reduceRight(callback, initialValue);
+    }
+
+
+    /**
+     * TypedArray.reverse routed to the array
+     * @returns {{ buffer: ArrayBufferLike; }} - The reversed array.
+     */
+    reverse() {
+        return this.array.reverse();
+    }
+
 
     /**
      * Calls Mutar.shift
@@ -1126,6 +1189,17 @@ class Mutar {
 
 
     /**
+     * TypedArray.slice routed to the array
+     * @param {number} start - Zero-based index at which to begin extraction
+     * @param {number} [end] - Optional. Zero-based index before which to end extraction. slice extracts up to but not including end
+     * @returns {{ buffer: ArrayBufferLike; }} - A new typed array containing the extracted elements
+     */
+    slice(start, end) {
+        return this.array.slice(start, end);
+    }
+
+
+    /**
      * Endian aware TypedArray.some
      * @param {function} callback - A function to call. 
      * @param {Object} thisArg - "this" object for the callback.
@@ -1136,10 +1210,23 @@ class Mutar {
         return this.#someFindHelper(callback, thisArg, littleEndian).bool;
     }
 
-    function sort(compareFunction, littleEndian=null) {
-        const precursor = [...values].sort(compareFunction);
-        this.array.set(precursor);
+
+    sort(compareFunction, littleEndian=null) {
+        littleEndian = this.#determineEndiannessHelper(littleEndian);
+
+        if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
+            const clone = this.extractArrayClone();
+            this.constructor.flipEndianness(clone);
+            clone.sort(compareFunction);
+            this.constructor.flipEndianness(clone);
+            this.array.set(clone);
+        } else {
+            this.array.sort(compareFunction);
+        }
+        
+        return this.array;
     }
+
 
     /**
      * Calls Mutar.splice
@@ -1216,24 +1303,6 @@ class Mutar {
         }
     }
 }
-
-
-// make build in array methods accessible at root
-[
-    "copyWithin", // stays
-    "keys", // stays
-    "reduce",
-    "reduceRight",
-    "reverse", // stays
-    "slice", // stays
-    "sort",
-].forEach((fn) => {
-    // eslint-disable-next-line no-new-func
-    const method = new Function("...args", `return this.array.${fn}(...args)`);
-    Object.defineProperty(method, "name", {value: fn});
-    Mutar.prototype[fn] = method;
-});
-
 
 export default Mutar
 export {IntegrityError, Utils, SYS_LITTLE_ENDIAN}
