@@ -937,6 +937,14 @@ class Mutar {
     }
 
 
+    /**
+     * 
+     * @param {number} value - Value to fill the typed array with
+     * @param {number} [start=0] - Start index. Defaults to 0 
+     * @param {number} [end] - End index (not included). Defaults to this.length
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     * @returns {{ buffer: ArrayBufferLike; }} - The modified array
+     */
     fill(value, start, end, littleEndian=null) {
         littleEndian = this.#determineEndiannessHelper(littleEndian);
         if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
@@ -946,6 +954,13 @@ class Mutar {
     }
 
 
+    /**
+     * 
+     * @param {function} callback -Function to test each element of the typed array. Invoked with arguments (element, index, array). Return true to keep the element, false otherwise
+     * @param {object} [thisArg] - Optional. Value to use as this when executing callback 
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     * @returns {{ buffer: ArrayBufferLike; }} - The modified array 
+     */
     filter(callback, thisArg, littleEndian=null) {
         littleEndian = this.#determineEndiannessHelper(littleEndian);
         
@@ -970,8 +985,8 @@ class Mutar {
 
     /**
      * Endian aware TypedArray.find
-     * @param {function} callback - A function to call. 
-     * @param {Object} thisArg - "this" object for the callback.
+     * @param {function} callback - Function to execute on each value in the typed array, taking three arguments (element, index, array) 
+     * @param {Object} [thisArg] - Optional. Value to use as this when executing callback
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
      * @returns {number} - The integer of the match, "undefined" if no match
      */
@@ -982,8 +997,8 @@ class Mutar {
 
     /**
      * Endian aware TypedArray.findIndex
-     * @param {function} callback - A function to call. 
-     * @param {Object} thisArg - "this" object for the callback.
+     * @param {function} callback - Function to execute on each value in the typed array, taking three arguments (element, index, array) 
+     * @param {Object} [thisArg] - Optional. Value to use as this when executing callback
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
      * @returns {number} - The index of the match, -1 if no match
      */
@@ -994,7 +1009,7 @@ class Mutar {
 
     /**
      * Calls Mutar.flipEndianness
-     * @param {boolean} [changeProperty=true] - If not set to false, the boolean obj.littleEndian flips either 
+     * @param {boolean} [changeProperty=true] - If not set to false, the boolean property this.littleEndian flips either 
      */
     flipEndianness(changeProperty=true) {
         this.updateArray = this.constructor.flipEndianness(this.array);
@@ -1007,8 +1022,8 @@ class Mutar {
 
     /**
      * Endian aware TypedArray.forEach
-     * @param {function} callback - A function to call. 
-     * @param {Object} thisArg - This object for the callback.
+     * @param {function} callback - Function that produces an element of the new typed array, taking three arguments (element, index, array) 
+     * @param {Object} [thisArg] - Optional. Value to use as this when executing callback
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
      */
     forEach(callback, thisArg, littleEndian=null) {
