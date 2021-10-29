@@ -961,6 +961,14 @@ class Mutar {
 
 
     /**
+     * The filter method calls a provided callback function once for each
+     * element in a typed array, and constructs a new typed array of all
+     * the values for which callbackFn returns a value that coerces to true.
+     * callback is invoked only for indexes of the typed array which have
+     * assigned values; it is not invoked for indexes which have been deleted
+     * or which have never been assigned values. Typed array elements which
+     * do not pass the callbackFn test are skipped, and are not included in
+     * the new typed array. 
      * 
      * @param {function} callback -Function to test each element of the typed array. Invoked with arguments (element, index, array). Return true to keep the element, false otherwise
      * @param {object} [thisArg] - Optional. Value to use as this when executing callback 
