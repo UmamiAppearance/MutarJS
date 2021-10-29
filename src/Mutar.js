@@ -751,15 +751,15 @@ class Mutar {
 
     // ----------------- > private helper methods < ----------------- //
 
-    #determineEndiannessHelper(littleEndian) {
+    #determineEndianness(littleEndian) {
         if (littleEndian === null) {
             return this.littleEndian;
         }
         return littleEndian;
     }
 
-    #searchElementHelper(fn, searchElement, fromIndex, littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+    #searchElement(fn, searchElement, fromIndex, littleEndian=null) {
+        littleEndian = this.#determineEndianness(littleEndian);
         
         if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
             searchElement = this.constructor.flipEndiannessInt(searchElement, this.type);
@@ -768,7 +768,7 @@ class Mutar {
         return this.array[fn](searchElement, fromIndex);
     }
 
-    #someFindHelper(callback, thisArg, littleEndian=null) {
+    #someFind(callback, thisArg, littleEndian=null) {
         if (thisArg) {
             callback = callback.bind(thisArg);
         }
@@ -805,7 +805,7 @@ class Mutar {
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
      */
     at(index, littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         index = Number(index);
         if (isNaN(index)) {
             index = 0;
@@ -860,8 +860,8 @@ class Mutar {
 
 
     /**
-     * Concat and set the array to the concatenated array.
-     * (Same as concat, but replaces the existing array)
+     * Concat and set the current array to the concatenated 
+     * one (equal to concat, but replaces the existing array).
      * 
      * @param  {(...buffer|string[])} args - At least one Typed array for concatenation. Additionally takes the strings "force" and "trim"
      */
@@ -888,7 +888,7 @@ class Mutar {
      * @returns {number} - The detached integer
      */
     detach(index, littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         let detached;
         [this.updateArray, detached] = this.constructor.detach(this.array, index, this.littleEndian);
         return detached;
@@ -907,7 +907,7 @@ class Mutar {
             callback = callback.bind(thisArg);
         }
 
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         const get = Utils.ViewMethods[this.type].get;
 
         for (let i=0; i<this.array.length; i++) {
@@ -938,7 +938,13 @@ class Mutar {
 
 
     /**
-     * 
+     * The fill method takes up to three arguments value, start and end.
+     * The start and end arguments are optional with default values of 0
+     * and the length of the this object.
+     * If start is negative, it is treated as length+start where length
+     * is the length of the array. If end is negative, it is treated as
+     * length+end.
+     *  
      * @param {number} value - Value to fill the typed array with
      * @param {number} [start=0] - Start index. Defaults to 0 
      * @param {number} [end] - End index (not included). Defaults to this.length
@@ -946,7 +952,7 @@ class Mutar {
      * @returns {{ buffer: ArrayBufferLike; }} - The modified array
      */
     fill(value, start, end, littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
             value = this.constructor.flipEndiannessInt(value, this.type);
         }
@@ -962,7 +968,7 @@ class Mutar {
      * @returns {{ buffer: ArrayBufferLike; }} - The modified array 
      */
     filter(callback, thisArg, littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         
         const precursor = [];
         function callbackDecorator(elem, i, array) {
@@ -991,7 +997,7 @@ class Mutar {
      * @returns {number} - The integer of the match, "undefined" if no match
      */
     find(callback, thisArg, littleEndian=null) {
-        return this.#someFindHelper(callback, thisArg, littleEndian).value;
+        return this.#someFind(callback, thisArg, littleEndian).value;
     }
 
 
@@ -1003,7 +1009,7 @@ class Mutar {
      * @returns {number} - The index of the match, -1 if no match
      */
      findIndex(callback, thisArg, littleEndian=null) {
-        return this.#someFindHelper(callback, thisArg, littleEndian).index;
+        return this.#someFind(callback, thisArg, littleEndian).index;
     }
     
 
@@ -1039,7 +1045,7 @@ class Mutar {
      * @returns {boolean}
      */
     includes(searchElement, fromIndex, littleEndian=null) {
-        return this.#searchElementHelper("includes", searchElement, fromIndex, littleEndian);
+        return this.#searchElement("includes", searchElement, fromIndex, littleEndian);
     }
 
     /**
@@ -1050,7 +1056,7 @@ class Mutar {
      * @returns {number} - The matching integer ("-1" if nothing matches)
      */
     indexOf(searchElement, fromIndex, littleEndian=null) {
-        return this.#searchElementHelper("indexOf", searchElement, fromIndex, littleEndian);
+        return this.#searchElement("indexOf", searchElement, fromIndex, littleEndian);
     }
 
 
@@ -1062,7 +1068,7 @@ class Mutar {
      * @returns {number} - The new length of the array
      */
     insert(index, integer, littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         let len;
         [this.updateArray, len] = this.constructor.insert(this.array, index, integer, this.littleEndian);
         return len;
@@ -1070,8 +1076,8 @@ class Mutar {
 
 
     /**
-     * 
-     * @param {string} separator - All values are concatenated to a string and separated by this string 
+     * Endian aware TypedArray.join 
+     * @param {string} [separator=""] - Optional. All values are concatenated to a string and separated by this string 
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
      * @returns {string} - The concatenated values as a string and separated by "separator"
      */
@@ -1097,7 +1103,7 @@ class Mutar {
      * @returns {number} - The matching integer ("-1" if nothing matches)
      */
     lastIndexOf(searchElement, fromIndex, littleEndian=null) {
-        return this.#searchElementHelper("lastIndexOf", searchElement, fromIndex, littleEndian);
+        return this.#searchElement("lastIndexOf", searchElement, fromIndex, littleEndian);
     }
 
 
@@ -1113,7 +1119,7 @@ class Mutar {
             callback = callback.bind(thisArg);
         }
 
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         const newArray = new Utils.ArrayTypes[this.type](this.length);
         const newView = new DataView(newArray.buffer);
         const methods = Utils.ViewMethods[this.type];
@@ -1137,7 +1143,7 @@ class Mutar {
      * @returns {number} - The popped integer
      */
     pop(littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         let popped;
         [this.updateArray, popped] = this.constructor.pop(this.array, littleEndian, this.view);
         return popped;
@@ -1196,7 +1202,7 @@ class Mutar {
      * @returns {number} - The shifted integer
      */
     shift(littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         let shifted;
         [this.updateArray, shifted] = this.constructor.shift(this.array, littleEndian, this.view);
         return shifted;
@@ -1222,12 +1228,12 @@ class Mutar {
      * @returns {boolean} - True if at least one call returns true
      */
     some(callback, thisArg, littleEndian=null) {
-        return this.#someFindHelper(callback, thisArg, littleEndian).bool;
+        return this.#someFind(callback, thisArg, littleEndian).bool;
     }
 
 
     sort(compareFunction, littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
 
         if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
             const clone = this.extractArrayClone();
@@ -1266,7 +1272,7 @@ class Mutar {
      * @param {boolean} [littleEndian=this.littleEndian] - Endianness decides where zero padding can get removed (start or end of array) 
      */
     trim(purge=false, littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         this.updateArray = this.constructor.trim(this.array, purge, littleEndian);
     }
 
@@ -1292,7 +1298,7 @@ class Mutar {
      * @returns {Object} - An iterator
      */
     *entries(littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
         const get = Utils.ViewMethods[this.type].get;
         
         for (let i=0; i<this.array.length; i++) {
@@ -1309,7 +1315,7 @@ class Mutar {
      * @returns {Object} - An iterator
      */
     *values(littleEndian=null) {
-        littleEndian = this.#determineEndiannessHelper(littleEndian);
+        littleEndian = this.#determineEndianness(littleEndian);
 
         const array = this.entries(littleEndian);
 
