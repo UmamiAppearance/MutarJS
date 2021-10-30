@@ -2,7 +2,6 @@
 /* eslint-disable no-console */
 import Mutar from "../src/Mutar.js";
 
-const Encoder = new TextEncoder();
 const Decoder = new TextDecoder();
 
 const result = {
@@ -11,6 +10,8 @@ const result = {
     errorMessages: {},
     units: {}
 };
+
+// Helpers
 
 function makeError(unit, subUnit, input, output, expected) {
     result.errors++;
@@ -37,6 +38,8 @@ function nextTest(unit) {
     result.tests++;
     result.units[unit].tests++;
 }
+
+// Test functions
 
 function typeTests() {
     /*
@@ -79,6 +82,7 @@ function typeTests() {
         );
     }
 }
+
 
 function objConversionTests() {
     const unit = "object-conversions";
@@ -374,8 +378,9 @@ function objConversionTests() {
     }
 }
 
-function objAddValDelVl(littleEndian) {
-    const unit = "object-add-remove-values";
+function objAppendDelete(littleEndian) {
+    const unit = "object-append-delete-values";
+    makeUnit(unit);
 
     // initialize test obj
     const obj = new Mutar([100, 200, 300, 400, 500, 600, 700, 800], Uint32Array, littleEndian);
@@ -385,18 +390,21 @@ function objAddValDelVl(littleEndian) {
         obj.flipEndianness(false);
     }
 
+    // make a copy for integrity check at the very end
+    const clone = obj.extractArrayClone();
+
     // ------------------------------------------------ //
     // testDetach - detach
-    // expect: "Hello Word!" after detaching and decoding + detached int 108
+    // expect: length of 7 + detached int 500
 
     nextTest(unit);
 
     const inputDetach = `MutarUint32Array(${obj.array.join()}).detach(4))`
     const detached = obj.detach(4);
-    const expectedDetach = "Hello Word!";
-    const outputDetach = Decoder.decode(obj.array);
+    const expectedDetach = 7;
+    const outputDetach = obj.length;
 
-    if (!(outputDetach === expectedDetach && detached === 108)) {
+    if (!(outputDetach === expectedDetach && detached === 500)) {
         makeError(
             unit,
             "detach",
@@ -409,35 +417,36 @@ function objAddValDelVl(littleEndian) {
 
     // ------------------------------------------------ //
     // testInsert - insert
-    // expect: original expectConset "Hello World!"
+    // expect: obj.length of 8 + value 500 at index 4
 
     nextTest(unit);
 
-    const inputInsert = `MutarUint8Array(${obj.array.join()}).insert(9, 108"))`
-    obj.insert(9, 108);
-    const outputInsert = Decoder.decode(obj.array);
+    const inputInsert = `MutarUint32Array(${obj.array.join()}).insert(4, 500"))`;
+    const expectedInsert = 8;
+    obj.insert(4, 500);
+    const outputInsert = obj.length;
 
-    if (outputInsert !== expectedConset) {
+    if (!(outputInsert === expectedInsert && obj.view.getUint32(16, littleEndian) === 500)) {
         makeError(
             unit,
             "Insert",
             inputInsert,
             outputInsert,
-            expectedConset
+            expectedInsert
         );
     }
 
 
     // ------------------------------------------------ //
     // testPush - push
-    // expect: "Hello World!!" after pushing and decoding
+    // expect: 6600 as the result of adding all values after pushing
 
     nextTest(unit);
 
-    const inputPush = `MutarUint8Array(${obj.array.join()}).push(33)`
-    obj.push(33);
-    const expectedPush = "Hello World!!";
-    const outputPush = Decoder.decode(obj.array);
+    const inputPush = `MutarUint32Array(${obj.array.join()}).push(900, 1000, 1100)`
+    obj.push(900, 1000, 1100);
+    const expectedPush = 6600
+    const outputPush = obj.reduce((a, b) => a + b);
 
     if (outputPush !== expectedPush) {
         makeError(
@@ -451,34 +460,38 @@ function objAddValDelVl(littleEndian) {
 
     // ------------------------------------------------ //
     // testPop - pop
-    // expect: original expectConset "Hello World!" + popped int 33
+    // expect: sum of 3000 after 3 times of calling pop and adding the results
     
     nextTest(unit);
 
-    const inputPop = `MutarUint8Array(${obj.array.join()}).pop()`
-    const popped = obj.pop();
-    const outputPop = Decoder.decode(obj.array);
+    const inputPop = `3 x MutarUint32Array(${obj.array.join()}).pop()`
+    const expectedPop = 3000;
+    let outputPop = obj.pop();
+    outputPop += obj.pop();
+    outputPop += obj.pop();
 
-    if (!(outputPop === expectedConset && popped === 33)) {
+
+    if (outputPop !== expectedPop) {
         makeError(
             unit,
             "pop",
             inputPop,
-            `${outputPop} && ${popped}`,
-            `${expectedConset} && 33`
+            outputPop,
+            expectedPop
         );
     }
 
     // ------------------------------------------------ //
     // testUnshift - unshift
-    // expect: "!Hello World!" after unshifting and decoding
+    // expect: sum of 8589937892 after reducing and addition (it ia so big,
+    // because of the negative values added to an unsigned array)
 
     nextTest(unit);
 
-    const inputUnshift = `MutarUint8Array(${obj.array.join()}).unshift(33)`
-    obj.unshift(33);
-    const expectedUnshift = "!Hello World!";
-    const outputUnshift = Decoder.decode(obj.array);
+    const inputUnshift = `MutarUint32Array(${obj.array.join()}).unshift(-200, -100, 0)`;
+    obj.unshift(-200, -100, 0);
+    const expectedUnshift = 8589937892;
+    const outputUnshift = obj.reduce((a, b) => a + b);
 
     if (outputUnshift !== expectedUnshift) {
         makeError(
@@ -492,30 +505,34 @@ function objAddValDelVl(littleEndian) {
 
     // ------------------------------------------------ //
     // testShift - shift
-    // expect: original expectConset "Hello World!" + popped int 33
+    // expect: original array
     
     nextTest(unit);
 
-    const inputShift = `MutarUint8Array(${obj.array.join()}).shift()`
-    const shifted = obj.shift();
-    const outputShift = Decoder.decode(obj.array);
+    const inputShift = `3 x MutarUint32Array(${obj.array.join()}).shift()`;
+    for (let i=3; i--;) {
+        obj.shift();
+    }
+    const outputShift = (obj.length === clone.length && obj.array.every((val, i) => val === clone[i]));
 
-    if (!(outputPop === expectedConset && shifted === 33)) {
+    if (!outputShift) {
         makeError(
             unit,
             "shift",
             inputShift,
-            `${outputShift} && ${shifted}`,
-            `${expectedConset} && 33`
+            `Uint32Array(${obj.array.join()})`,
+            `Uint32Array(${clone.join()})`
         );
     }
-
 }
 
 
 function main() {
     typeTests();
     objConversionTests();
+    for (const littleEndian of [true, false]) {
+        objAppendDelete(littleEndian);
+    }
     
     console.log("results");
 

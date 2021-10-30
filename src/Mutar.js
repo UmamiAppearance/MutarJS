@@ -1179,18 +1179,18 @@ class Mutar {
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
      * @returns {*} - The value that results from the reduction
      */
-    reduce(callback, initialValue, littleEndian=null) {
+    reduce(callback, initialValue=null, littleEndian=null) {
         return [...this.values(littleEndian)].reduce(callback, initialValue);
     }
 
     /**
      * Endian aware TypedArray.reduceRight
     * @param {function} callback - Function to execute on each value in the typed array, taking four arguments 
-     * @param {*} [initialValue] - Object to use as the first argument to the first call of the callback  
+     * @param {*} [initialValue=null] - Object to use as the first argument to the first call of the callback  
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
      * @returns {*} - The value that results from the reduction
      */
-    reduceRight(callback, initialValue, littleEndian=null) {
+    reduceRight(callback, initialValue=null, littleEndian=null) {
         return [...this.values(littleEndian)].reduceRight(callback, initialValue);
     }
 
