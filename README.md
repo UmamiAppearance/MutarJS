@@ -1,7 +1,7 @@
 # Mutar
 **Mu**table**T**yped**Ar**ray - _/mu'taɾ/, spanish for to change, mutate_
 
-**Mutar** is a toolkit to interact with typed arrays and modify them (or let's say a kit to emulate modification) and a constructor for a special object. It is a very convenient way to handle binary data. If constructed, the array behaves pretty much as a regular array. You can concatenate, pop, shift, unshift... On top of that the type can be changed from - let's say - Uint8 to Float64. Also zero padding can get trimmed. 
+**Mutar** is a toolkit to interact with typed arrays and modify them (or let's say a kit to emulate modification) and a constructor for a special object. It is a very convenient way to handle binary data. If constructed, the array behaves pretty much as a regular array. You can concatenate, pop, shift, unshift... On top of that the type can be changed from - let's say - Uint8 to Float64. 
 
 In reality TypedArrays are not mutable in terms of growing and shrinking. To emulate mutability a new array with the desired properties is created. This comes to a price of course. Every time the array "changes", a new TypedArray is allocated in memory. Keep that in mind when using it, if this is critical to you.
 
