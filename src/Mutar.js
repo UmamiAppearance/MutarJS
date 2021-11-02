@@ -887,7 +887,7 @@ class Mutar {
      * @returns {{ buffer: ArrayBufferLike; }} - The modified array
      */
     copyWithin(target, start, end) {
-        return this.array(target, start, end);
+        return this.array.copyWithin(target, start, end);
     }
 
 
