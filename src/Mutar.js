@@ -645,8 +645,6 @@ class Mutar {
         }
 
         const littleEndian = (typeof(items.at(-1)) === "boolean") ? items.splice(-1, 1)[0] : SYS_LITTLE_ENDIAN;
-        console.log(littleEndian);
-
         const end = start + deleteCount; 
         
         const startArray = obj.subarray(0, start);
@@ -1102,6 +1100,7 @@ class Mutar {
      * @returns {string} - The concatenated values as a string and separated by "separator"
      */
     join(separator=",", littleEndian=null) {
+        littleEndian = this.#determineEndianness(littleEndian);
         return [...this.values(littleEndian)].join(separator);
     }
 
@@ -1215,6 +1214,31 @@ class Mutar {
         return this.array.reverse();
     }
 
+    
+    set(array, offset, littleEndian=null) {
+        littleEndian = this.#determineEndianness(littleEndian);
+        let intermediate;
+        if (Array.isArray(array)) {
+            intermediate = new Utils.ArrayTypes[this.type](array);
+        }
+        if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
+            // If the input array has to be manipulated
+            // create a copy, to keep the integrity.
+            // That is unnecessary if the input was a
+            // regular array. 
+            if (!intermediate) {
+                intermediate = array.slice();
+            }
+            this.constructor.flipEndianness(intermediate);
+        }
+        
+        if (!intermediate) {
+            intermediate = array;
+        }
+
+        this.array.set(intermediate, offset);
+    }
+
 
     /**
      * Calls Mutar.shift
@@ -1293,12 +1317,32 @@ class Mutar {
 
 
     /**
-     * TypedArray.copyWithin routed to the array
+     * TypedArray.subarray routed to the array
      * @param {number} [start] - Optional. Element to begin at. The offset is inclusive. The whole array will be included in the new view if this value is not specified 
      * @param {number} [end] - Optional. Element to end at. The offset is exclusive. If not specified, all elements from the one specified by begin to the end of the array are included in the new view
+     * @returns {{ buffer: ArrayBufferLike; }} - The subarray of the original array
      */
     subarray(start, end) {
         return this.array.subarray(start, end);
+    }
+
+
+    /**
+     * Endian aware TypedArray.toLocaleString
+     * @returns A string representing the elements of the array
+     */
+    toLocaleString(littleEndian=null) {
+        littleEndian = this.#determineEndianness(littleEndian);
+        return [...this.values(littleEndian)].toLocaleString();
+    }
+
+
+    /**
+     * Endian aware TypedArray.toString
+     * @returns A string representing the elements of the array
+     */
+     toString(littleEndian=null) {
+        return [...this.values(littleEndian)].toString();
     }
 
 
