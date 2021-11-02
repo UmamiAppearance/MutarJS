@@ -39,6 +39,10 @@ function nextTest(unit) {
     result.units[unit].tests++;
 }
 
+function areEqual(arrayA, arrayB) {
+    return arrayA.length === arrayB.length && arrayA.every((val, i) => val === arrayB[i]);
+}
+
 // Test functions
 
 function typeTests() {
@@ -48,8 +52,10 @@ function typeTests() {
     */
    
     const unit = "type-test";
-    const Uint8 = new Uint8Array(1);
     makeUnit(unit);
+
+    // initialize test object
+    const Uint8 = new Uint8Array(1);
 
     const inputs = [Uint8Array, Uint8, Uint8];
     const expectations = ["Uint8Array", "Uint8Array", true, true];
@@ -87,17 +93,133 @@ function typeTests() {
 function objPrimitiveRoutings() {
     const unit = "object-primitive-routings"
     makeUnit(unit);
+
+    // Initialize test object
+    const obj = new Mutar("dlroWolleH");
+
+    //    , "keys", 
+
+
+    // ------------------------------------------------------------------------------------------------ //
+    // testSlice - call build in function "slice" from root
+    // expect: decoded "Wolle" (german word for wool)
+    
+    nextTest(unit);
+
+    const inputSlice = `MutarUint8Array(${obj.array.join()}).slice(4, -1)`;
+    const slice = obj.slice(4, -1);
+    const expectedSlice = "Wolle";
+    const outputSlice = Decoder.decode(slice);
+
+    if (outputSlice !== expectedSlice) {
+        makeError(
+            unit,
+            "slice",
+            inputSlice,
+            outputSlice,
+            expectedSlice
+        );
+    }
+
+
+    // ------------------------------------------------------------------------------------------------ //
+    // testReverse - call build in function "reverse" from root
+    // expect: decoded "HelloWorld"
+    
+    nextTest(unit);
+
+    const inputReverse = `MutarUint8Array(${obj.array.join()}).reverse()`
+    obj.reverse();
+
+    const outputReverse = Decoder.decode(obj.array);
+    const expectedReverse = "HelloWorld";
+
+    if (outputReverse !== expectedReverse) {
+        makeError(
+            unit,
+            "reverse",
+            inputReverse,
+            outputReverse,
+            expectedReverse
+        );
+    }
+
+
+    // ------------------------------------------------------------------------------------------------ //
+    // testCopyWithin - call build in function "copyWithin" from root
+    // expect: decoded "HelloHello"
+    
+    nextTest(unit);
+
+    const inputCopyWithin = `MutarUint8Array(${obj.array.join()}).copyWithin(5, 0, 5)`
+    obj.copyWithin(5, 0, 5);
+
+    const outputCopyWithin = Decoder.decode(obj.array);
+    const expectedCopyWithin = "HelloHello";
+
+    if (outputCopyWithin !== expectedCopyWithin) {
+        makeError(
+            unit,
+            "copyWithin",
+            inputCopyWithin,
+            outputCopyWithin,
+            expectedCopyWithin
+        );
+    }
+
+
+    // ------------------------------------------------------------------------------------------------ //
+    // testSubarray - call build in function "subarray" from root
+    // expect: decoded "HelloolleH" after reversing the subarray
+    
+    nextTest(unit);
+
+    const inputSubarray = `MutarUint8Array(${obj.array.join()}).subarray(5).reverse()`
+    const sub = obj.subarray(5);
+    sub.reverse();
+
+    const outputSubarray = Decoder.decode(obj.array);
+    const expectedSubarray = "HelloolleH";
+
+    if (outputSubarray !== expectedSubarray) {
+        makeError(
+            unit,
+            "subarray",
+            inputSubarray,
+            outputSubarray,
+            expectedSubarray
+        );
+    }
+
+
+    // ------------------------------------------------------------------------------------------------ //
+    // testKeys - call build in function "keys" from root
+    // expect: string "0123456789" after joining keys iterator
+    
+    nextTest(unit);
+
+    const inputKeys = `MutarUint8Array(${obj.array.join()}).keys().join("")`
+    const outputKeys = [...obj.keys()].join("");
+    const expectedKeys = "0123456789";
+
+    if (outputKeys !== expectedKeys) {
+        makeError(
+            unit,
+            "keys",
+            inputKeys,
+            outputKeys,
+            expectedKeys
+        );
+    }
 }
 
 
 function objConversionTests() {
     const unit = "object-conversions";
+    makeUnit(unit);
     
     // initialize object as little endian
     const obj = Mutar.from("Hello ", null, true);
-
-    makeUnit(unit);
-
 
     // ------------------------------------------------------------------------------------------------ //
     // testConset - conset (tests concat either)
@@ -360,28 +482,6 @@ function objConversionTests() {
             expectedConset
         );
     }
-
-    // ------------------------------------------------------------------------------------------------ //
-    // testBuildInAccess - call build in function "reverse" from root
-    // expect: decoded "!dlroW olleH"
-    
-    nextTest(unit);
-
-    const inputBuildInAccess = `MutarUint8Array(${obj.array.join()}).reverse()`
-    const reversed = obj.reverse();
-
-    const outputBuildInAccess = Decoder.decode(reversed);
-    const expectedBuildInAccess = "!dlroW olleH";
-
-    if (outputBuildInAccess !== expectedBuildInAccess) {
-        makeError(
-            unit,
-            "buildInReverse",
-            inputBuildInAccess,
-            outputBuildInAccess,
-            expectedBuildInAccess
-        );
-    }
 }
 
 function objAppendDelete(littleEndian) {
@@ -457,10 +557,11 @@ function objAppendDelete(littleEndian) {
 
     const inputDetach = `MutarUint32Array(${obj.array.join()}).detach(4))`
     const detached = obj.detach(4);
-    const expectedDetach = 7;
-    const outputDetach = obj.length;
+    console.log("detached", detached);
+    const expectedDetach = [7, 500];
+    const outputDetach = [obj.length, detached];
 
-    if (!(outputDetach === expectedDetach && detached === 500)) {
+    if (!(outputDetach[0] === expectedDetach[0] && outputDetach[1] === expectedDetach[1])) {
         makeError(
             unit,
             "detach",
@@ -478,11 +579,11 @@ function objAppendDelete(littleEndian) {
     nextTest(unit);
 
     const inputInsert = `MutarUint32Array(${obj.array.join()}).insert(4, 500"))`;
-    const expectedInsert = 8;
+    const expectedInsert = [8, 500];
     obj.insert(4, 500);
-    const outputInsert = obj.length;
+    const outputInsert = [obj.length, obj.view.getUint32(16, littleEndian)];
 
-    if (!(outputInsert === expectedInsert && obj.view.getUint32(16, littleEndian) === 500)) {
+    if (!(outputInsert[0] === expectedInsert[0] && outputInsert[1] === expectedInsert[1])) {
         makeError(
             unit,
             "Insert",
@@ -541,8 +642,8 @@ function objAppendDelete(littleEndian) {
 
     // ------------------------------------------------------------------------------------------------ //
     // testUnshift - unshift
-    // expect: sum of 8589937892 after reducing and addition (it ia so big,
-    // because of the negative values added to an unsigned array)
+    // expect: sum of 8589937892 after reducing and addition (it is so
+    // big, because of the negative values added to an unsigned array)
 
     nextTest(unit);
 
@@ -571,7 +672,7 @@ function objAppendDelete(littleEndian) {
     for (let i=3; i--;) {
         obj.shift();
     }
-    const outputShift = (obj.length === clone.length && obj.array.every((val, i) => val === clone[i]));
+    const outputShift = areEqual(obj.array, clone);
 
     if (!outputShift) {
         makeError(
@@ -586,8 +687,13 @@ function objAppendDelete(littleEndian) {
 
 
 function main() {
+    
     typeTests();
+    
+    objPrimitiveRoutings();
+    
     objConversionTests();
+    
     for (const littleEndian of [true, false]) {
         objAppendDelete(littleEndian);
     }

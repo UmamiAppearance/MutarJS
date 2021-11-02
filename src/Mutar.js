@@ -516,10 +516,14 @@ class Mutar {
     static detach(obj, index, littleEndian=SYS_LITTLE_ENDIAN) {
 
         index = Math.min(index, obj.length-1);
-        let detached, newArray;
-        [newArray, detached] = Mutar.splice(obj, index, 1, littleEndian);
+        let detachedArray, newArray;
+        [newArray, detachedArray] = Mutar.splice(obj, index, 1, littleEndian);
 
-        return [newArray, detached[0]];
+        if (littleEndian !== SYS_LITTLE_ENDIAN) {
+            Mutar.flipEndianness(detachedArray);
+        }
+
+        return [newArray, detachedArray.at(0)];
     }
 
 
