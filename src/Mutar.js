@@ -1215,6 +1215,12 @@ class Mutar {
     }
 
     
+    /**
+     * Endian aware TypedArray.set
+     * @param {({ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; } | number[] | string)} array - The array from which to copy values. All values from the source array are copied into the target array, unless the length of the source array plus the offset exceeds the length of the target array, in which case an exception is thrown. If the source array is a typed array, the two arrays may share the same underlying ArrayBuffer; the JavaScript engine will intelligently copy the source range of the buffer to the destination range, but only if the endianness of the input does not have to be adjusted  
+     * @param {number} [offset=0] - Optional. The offset into the target array at which to begin writing values from the source array. If this value is omitted, 0 is assumed (that is, the source array will overwrite values in the target array starting at index 0)
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     */    
     set(array, offset, littleEndian=null) {
         littleEndian = this.#determineEndianness(littleEndian);
         let intermediate;
