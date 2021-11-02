@@ -158,15 +158,14 @@ class Mutar {
                 input = this.constructor.flipEndianness(input);
             }
             this.updateArray = input;
-            this.type = input.constructor.name;
 
         // If not the type must be specified and a new typed
         // array gets constructed based on the given information.
         } else if (input instanceof ArrayBuffer || Array.isArray(input)) {
             let error = true;
             if (type) {
-                this.type = Mutar.typeFromInput(type);
-                const typeConstructor = Utils.ArrayTypes[this.type];
+                type = Mutar.typeFromInput(type);
+                const typeConstructor = Utils.ArrayTypes[type];
                 if (input instanceof ArrayBuffer || Array.isArray(input)) {
                     this.updateArray = new typeConstructor(input);
                     error = false;
@@ -519,12 +518,8 @@ class Mutar {
         index = Math.min(index, obj.length-1);
         let detached, newArray;
         [newArray, detached] = Mutar.splice(obj, index, 1, littleEndian);
-        
-        const get = Utils.ViewMethods[obj.constructor.name].get;
-        const detachedView = new DataView(detached.buffer);
-        detached = detachedView[get](0, littleEndian);
 
-        return [newArray, detached];
+        return [newArray, detached[0]];
     }
 
 
@@ -650,6 +645,7 @@ class Mutar {
         }
 
         const littleEndian = (typeof(items.at(-1)) === "boolean") ? items.splice(-1, 1)[0] : SYS_LITTLE_ENDIAN;
+        console.log(littleEndian);
 
         const end = start + deleteCount; 
         
@@ -663,11 +659,9 @@ class Mutar {
         if (items.length) {
             const ins = new Utils.ArrayTypes[type](items.length);
             const view = new DataView(ins.buffer);
-            let i = 0;
-            const step = ins.BYTES_PER_ELEMENT;
-            for (let j=0, l=ins.byteLength; j<l; j+=step) {
-                view[set](j, items[i], littleEndian);
-                i++;
+            const bytesPerElem = ins.BYTES_PER_ELEMENT;
+            for (let i=0, l=items.length; i<l; i++) {
+                view[set](i*bytesPerElem, items[i], littleEndian);
             }
             newArray = Mutar.concat(startArray, ins, endArray);
         } else {
@@ -730,16 +724,35 @@ class Mutar {
      */
     set updateArray(typedArray) {
         this.array = typedArray;
-        this.buffer = typedArray.buffer;
-        this.byteLength = typedArray.byteLength;
-        this.byteOffset = typedArray.byteOffset;
-        this.length = typedArray.length;
         this.view = new DataView(typedArray.buffer);
-        this.BYTES_PER_ELEMENT = typedArray.BYTES_PER_ELEMENT;
     }
 
     get [Symbol.species]() {
         return Utils.ArrayTypes[this.type];
+    }
+
+    get buffer() {
+        return this.array.buffer;
+    }
+
+    get byteLength() {
+        return this.array.byteLength;
+    }
+
+    get byteOffset() {
+        return this.array.byteOffset;
+    }
+
+    get length() {
+        return this.array.length;
+    }
+
+    get type() {
+        return this.array.constructor.name;
+    }
+
+    get BYTES_PER_ELEMENT() {
+        return this.array.BYTES_PER_ELEMENT;
     }
 
     /**
@@ -854,7 +867,6 @@ class Mutar {
     convert(type, trim=false, intMode=false) {
         type = this.constructor.typeFromInput(type);
         this.updateArray = this.constructor.convert(this.array, type, trim, intMode, this.littleEndian, this.view);
-        this.type = type;
         return this.array;
     }
 
@@ -1085,11 +1097,11 @@ class Mutar {
 
     /**
      * Endian aware TypedArray.join 
-     * @param {string} [separator=""] - Optional. All values are concatenated to a string and separated by this string 
+     * @param {string} [separator=","] - Optional. All values are concatenated to a string and separated by this string 
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
      * @returns {string} - The concatenated values as a string and separated by "separator"
      */
-    join(separator, littleEndian=null) {
+    join(separator=",", littleEndian=null) {
         return [...this.values(littleEndian)].join(separator);
     }
 
@@ -1239,7 +1251,13 @@ class Mutar {
         return this.#someFind(callback, thisArg, littleEndian).bool;
     }
 
-
+    
+    /**
+     * 
+     * @param {function} [compareFunction] - Optional. Specifies a function that defines the sort order 
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
+     * @returns {{ buffer: ArrayBufferLike; }} - The sorted typed array
+     */
     sort(compareFunction, littleEndian=null) {
         littleEndian = this.#determineEndianness(littleEndian);
 
@@ -1271,6 +1289,16 @@ class Mutar {
         let spliced;
         [this.updateArray, spliced] = this.constructor.splice(this.array, start, deleteCount, ...items)
         return spliced;
+    }
+
+
+    /**
+     * TypedArray.copyWithin routed to the array
+     * @param {number} [start] - Optional. Element to begin at. The offset is inclusive. The whole array will be included in the new view if this value is not specified 
+     * @param {number} [end] - Optional. Element to end at. The offset is exclusive. If not specified, all elements from the one specified by begin to the end of the array are included in the new view
+     */
+    subarray(start, end) {
+        return this.array.subarray(start, end);
     }
 
 

@@ -84,16 +84,22 @@ function typeTests() {
 }
 
 
+function objPrimitiveRoutings() {
+    const unit = "object-primitive-routings"
+    makeUnit(unit);
+}
+
+
 function objConversionTests() {
     const unit = "object-conversions";
     
     // initialize object as little endian
-    const obj = new Mutar("Hello ", null, true);
+    const obj = Mutar.from("Hello ", null, true);
 
     makeUnit(unit);
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testConset - conset (tests concat either)
     // expect: complete string "Hello World!" after decoding
     
@@ -118,7 +124,7 @@ function objConversionTests() {
     }
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testConvert - convert
     // expect: integer "4247253545" after conversion to Uint32 and addition of the 3 individual bytes
     
@@ -148,7 +154,7 @@ function objConversionTests() {
     }
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testCloneEquality - clone the Mutar obj
     // expect: A copy obj the whole object
 
@@ -171,7 +177,7 @@ function objConversionTests() {
     }
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testConvertIntModeIntegrityError - convert intMode
     // expect: IntegrityError
 
@@ -199,7 +205,7 @@ function objConversionTests() {
     }
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testConvertIntModeForce - convert intMode forcing
     // expect: string "Hor" after conversion and decoding
 
@@ -222,7 +228,7 @@ function objConversionTests() {
         );
     }
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testConvertIntModeUp - convert Uint8 to Uint16 intMode 
     // expect: 297 after adding up 3 Uint16 bytes
 
@@ -246,7 +252,7 @@ function objConversionTests() {
     }
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testEndiannessChange - flipEndianness, get the first Uint16 integer as big endian (it is flipped back afterwards)
     // expect: string "18432|72"
 
@@ -271,7 +277,7 @@ function objConversionTests() {
     }
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testConvertIntModeBack - convert Uint16 back to Uint8 intMode 
     // expect: former String "Hor" after converting back and decoding
 
@@ -294,7 +300,7 @@ function objConversionTests() {
     }
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testObjIntegrityAfterCloneMod - test if original object is untouched since equality test
     // expect: Inequality of clone and object
 
@@ -314,7 +320,7 @@ function objConversionTests() {
     }
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testConvertBig - convert way up, get one BigUint
     // expect: BigUint "8022916924116329800n" at byte 0 (little endian)
     
@@ -335,7 +341,7 @@ function objConversionTests() {
         );
     }
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testConvertBack - convert back to Uint8, with trimming decode to utf-8-string
     // expect: original expectConset "Hello World!"
 
@@ -355,7 +361,7 @@ function objConversionTests() {
         );
     }
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testBuildInAccess - call build in function "reverse" from root
     // expect: decoded "!dlroW olleH"
     
@@ -393,7 +399,57 @@ function objAppendDelete(littleEndian) {
     // make a copy for integrity check at the very end
     const clone = obj.extractArrayClone();
 
-    // ------------------------------------------------ //
+
+    // ------------------------------------------------------------------------------------------------ //
+    // testSplice - splice
+    // expect: string "1002004050607080400500600700800" after joining without separator
+
+    nextTest(unit);
+
+    const inputSplice = `MutarUint32Array(${obj.array.join()}).splice(2, 1, 40, 50, 60, 70, 80)`;
+    const expectedSplice = "1002004050607080400500600700800";
+    
+    obj.splice(2, 1, 40, 50, 60, 70, 80);
+
+    const outputSplice = obj.join("");
+
+    if (outputSplice !== expectedSplice) {
+        makeError(
+            unit,
+            "splice",
+            inputSplice,
+            outputSplice,
+            expectedSplice
+        );
+    }
+
+
+    // ------------------------------------------------------------------------------------------------ //
+    // testSpliceRestore - splice
+    // expect: a spliced array with length of 5 and a sum 300 by adding all elements 
+
+    nextTest(unit);
+
+    const inputSpliceRestore = `MutarUint32Array(${obj.array.join()}).splice(2, 5, 300)`;
+    const expectedSpliceRestore = 300;
+    
+    // store output as a Mutar object to handle endianness correctly
+    const spliced = Mutar.from(obj.splice(2, 5, 300), null, littleEndian);
+
+    const outputSpliceRestore = spliced.reduce((a, b) => a + b);
+
+    if (!(outputSpliceRestore === expectedSpliceRestore && spliced.length === 5)) {
+        makeError(
+            unit,
+            "splice",
+            inputSpliceRestore,
+            outputSpliceRestore,
+            expectedSpliceRestore
+        );
+    }
+
+
+    // ------------------------------------------------------------------------------------------------ //
     // testDetach - detach
     // expect: length of 7 + detached int 500
 
@@ -415,7 +471,7 @@ function objAppendDelete(littleEndian) {
     }
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testInsert - insert
     // expect: obj.length of 8 + value 500 at index 4
 
@@ -437,7 +493,7 @@ function objAppendDelete(littleEndian) {
     }
 
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testPush - push
     // expect: 6600 as the result of adding all values after pushing
 
@@ -458,7 +514,7 @@ function objAppendDelete(littleEndian) {
         );
     }
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testPop - pop
     // expect: sum of 3000 after 3 times of calling pop and adding the results
     
@@ -466,10 +522,12 @@ function objAppendDelete(littleEndian) {
 
     const inputPop = `3 x MutarUint32Array(${obj.array.join()}).pop()`
     const expectedPop = 3000;
-    let outputPop = obj.pop();
-    outputPop += obj.pop();
-    outputPop += obj.pop();
-
+    
+    let outputPop = 0;
+    
+    for (let i=3; i--;) {
+        outputPop += obj.pop();
+    }
 
     if (outputPop !== expectedPop) {
         makeError(
@@ -481,7 +539,7 @@ function objAppendDelete(littleEndian) {
         );
     }
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testUnshift - unshift
     // expect: sum of 8589937892 after reducing and addition (it ia so big,
     // because of the negative values added to an unsigned array)
@@ -503,7 +561,7 @@ function objAppendDelete(littleEndian) {
         );
     }
 
-    // ------------------------------------------------ //
+    // ------------------------------------------------------------------------------------------------ //
     // testShift - shift
     // expect: original array
     
