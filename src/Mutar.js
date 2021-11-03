@@ -471,10 +471,15 @@ class Mutar {
      * Takes an object, reverses the individual integers
      * and returns it.
      * 
-     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
+     * @param {boolean} [clone=false] - If true, a copy of the array is made before manipulation
      * @returns {{ buffer: ArrayBufferLike; }} - A new TypedArray with reversed integers
      */
-    static flipEndianness(obj) {
+    static flipEndianness(obj, clone=false) {
+
+        if (clone) {
+            obj = obj.slice();
+        }
 
         const bytesPerElem = obj.constructor.BYTES_PER_ELEMENT 
         if (bytesPerElem > 1) {
@@ -845,7 +850,7 @@ class Mutar {
      * @returns {Object} - A independent copy of the current Mutar object 
      */
     clone() {  
-        return new Mutar(this.array.slice());
+        return new Mutar(this.array.slice(), null, this.littleEndian);
     }
     
 
@@ -909,6 +914,23 @@ class Mutar {
     }
 
 
+    /**
+     * Endian aware TypedArray.entries
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     * @returns {Object} - An iterator
+     */
+    *entries(littleEndian=null) {
+        littleEndian = this.#determineEndianness(littleEndian);
+        const get = Utils.ViewMethods[this.type].get;
+        
+        for (let i=0; i<this.array.length; i++) {
+            const offset = i*this.BYTES_PER_ELEMENT;
+            const elem = this.view[get](offset, littleEndian);
+            yield [i, elem];
+        }
+    }
+
+    
     /**
      * Endian aware TypedArray.every
      * @param {function} callback - A function to call. 
@@ -1379,23 +1401,6 @@ class Mutar {
         let len;
         [this.updateArray, len] = this.constructor.unshift(this.array, ...args);
         return len;
-    }
-
-
-    /**
-     * Endian aware TypedArray.entries
-     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
-     * @returns {Object} - An iterator
-     */
-    *entries(littleEndian=null) {
-        littleEndian = this.#determineEndianness(littleEndian);
-        const get = Utils.ViewMethods[this.type].get;
-        
-        for (let i=0; i<this.array.length; i++) {
-            const offset = i*this.BYTES_PER_ELEMENT;
-            const elem = this.view[get](offset, littleEndian);
-            yield [i, elem];
-        }
     }
 
 

@@ -1,4 +1,3 @@
-/* eslint-disable complexity */
 /* eslint-disable no-console */
 import Mutar from "../src/Mutar.js";
 
@@ -39,8 +38,16 @@ function nextTest(unit) {
     result.units[unit].tests++;
 }
 
-function areEqual(arrayA, arrayB) {
-    return arrayA.length === arrayB.length && arrayA.every((val, i) => val === arrayB[i]);
+function appendEndiannessStr(name, littleEndian) {
+    const endianness = (littleEndian) ? "LE" : "BE";
+    return `${name}-${endianness}`;
+}
+
+function areEqual(itemA, itemB) {
+    if (typeof(itemA) === "object") {
+        return itemA.length === itemB.length && itemA.every((val, i) => val === itemB[i]);
+    }
+    return (itemA === itemB);
 }
 
 // Test functions
@@ -96,8 +103,6 @@ function objPrimitiveRoutings() {
 
     // Initialize test object
     const obj = new Mutar("dlroWolleH");
-
-    //    , "keys", 
 
 
     // ------------------------------------------------------------------------------------------------ //
@@ -213,6 +218,104 @@ function objPrimitiveRoutings() {
     }
 }
 
+/**
+ * Tests the following functions:
+ * at
+ * entries
+ * every
+ * fill
+ * filter
+ * find
+ * findIndex
+ * forEach
+ * includes
+ * indexOf
+ * join
+ * lastIndexOf
+ * map
+ * reduce
+ * reduceRight
+ * reverse
+ * set
+ * slice
+ * some
+ * sort
+ * toLocaleString
+ * toString
+ * values
+ */
+function objRewrittenBuildIns(littleEndian) {
+    const unit = appendEndiannessStr("rewritten-build-ins", littleEndian);
+    makeUnit(unit);
+
+    // Initialize test object
+    const obj = new Mutar([0, 11, 22, 33, 44, 55, 66, 77, 88, 99], "Uint32", littleEndian);
+    const cloneA = obj.clone();
+    const cloneB = obj.clone();
+
+    function test(fn, subUnit, input, inputStr) {
+        const passed = fn(input);
+        if (!passed) {
+            makeError(
+                unit,
+                subUnit,
+                inputStr.replaceAll("INPUT", input),
+                passed,
+                true
+            )
+        }
+    }
+
+    const switchOrig = (littleEndian !== obj.SYS_LITTLE_ENDIAN);
+
+    function switchOutputEndiannessInt(output) {
+        if (switchOrig) {
+            return Mutar.flipEndiannessInt(output, "Uint32Array");
+        }
+        return output;
+    }
+
+    function switchOutputEndiannessArray(testObj) {
+        if (switchOrig) {
+            return Mutar.flipEndianness(testObj, true);
+        }
+        return testObj;
+    }
+
+
+    const routine = {
+        at: {
+            fn: (input) => areEqual(obj.at(input), switchOutputEndiannessInt(obj.array.at(input))),
+            input: 2,
+            inputStr: "obj.at(INPUT) === obj.array.at(INPUT)",
+        },
+        entries: {
+            fn: () => areEqual([...obj.entries()].toString(), [...switchOutputEndiannessArray(obj.array).entries()].toString()),
+            input: "",
+            inputStr: "obj.entries() === obj.array.entries()",
+        },
+        every: {
+            fn: (input) => areEqual(obj.every(input), switchOutputEndiannessArray(obj.array).every(input)),
+            input: (val) => val < 100,
+            inputStr: "obj.every(val < 100) === obj.array.every(val < 100)",
+        },
+        fill: {
+            fn: (input) => areEqual(cloneA.fill(input), cloneB.array.fill(switchOutputEndiannessInt(input))),
+            input: 100,
+            inputStr: "cloneA.fill(INPUT) === cloneB.array.fill(INPUT)",
+        }
+    }
+
+    for (const subUnit in routine) {
+        if (Object.prototype.hasOwnProperty.call(routine, subUnit)) {
+            const śubUnitObj = routine[subUnit];
+            test(śubUnitObj.fn, subUnit, śubUnitObj.input, śubUnitObj.inputStr);
+        } else {
+            throw new Error("Failure in test routine. This is a bug. Testing aborted.");
+        }
+    }
+}
+
 
 function objConversionTests() {
     const unit = "object-conversions";
@@ -220,6 +323,7 @@ function objConversionTests() {
     
     // initialize object as little endian
     const obj = Mutar.from("Hello ", null, true);
+
 
     // ------------------------------------------------------------------------------------------------ //
     // testConset - conset (tests concat either)
@@ -258,6 +362,7 @@ function objConversionTests() {
     
     obj.convert(Uint32Array);
     
+
     // The view now has 3 Uint32 integers. Those are received
     // in LE byte order and added up. The result must be 
     // 4247253545
@@ -349,6 +454,7 @@ function objConversionTests() {
             expectedConvertIntModeForce
         );
     }
+
 
     // ------------------------------------------------------------------------------------------------ //
     // testConvertIntModeUp - convert Uint8 to Uint16 intMode 
@@ -485,7 +591,7 @@ function objConversionTests() {
 }
 
 function objAppendDelete(littleEndian) {
-    const unit = "object-append-delete-values";
+    const unit = appendEndiannessStr("object-append-delete-values", littleEndian);
     makeUnit(unit);
 
     // initialize test obj
@@ -557,7 +663,6 @@ function objAppendDelete(littleEndian) {
 
     const inputDetach = `MutarUint32Array(${obj.array.join()}).detach(4))`
     const detached = obj.detach(4);
-    console.log("detached", detached);
     const expectedDetach = [7, 500];
     const outputDetach = [obj.length, detached];
 
@@ -691,6 +796,10 @@ function main() {
     typeTests();
     
     objPrimitiveRoutings();
+
+    for (const littleEndian of [true, false]) {
+        objRewrittenBuildIns(littleEndian);
+    }
     
     objConversionTests();
     
