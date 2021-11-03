@@ -155,7 +155,7 @@ class Mutar {
         // get read from that object.
         if (this.constructor.isTypedArray(input)) {
             if (adjustEndianness) {
-                input = this.constructor.flipEndianness(input);
+                this.constructor.flipEndianness(input);
             }
             this.updateArray = input;
 
@@ -1006,7 +1006,7 @@ class Mutar {
      * do not pass the callbackFn test are skipped, and are not included in
      * the new typed array. 
      * 
-     * @param {function} callback -Function to test each element of the typed array. Invoked with arguments (element, index, array). Return true to keep the element, false otherwise
+     * @param {function} callback - Function to test each element of the typed array. Invoked with arguments (element, index, array). Return true to keep the element, false otherwise
      * @param {object} [thisArg] - Optional. Value to use as this when executing callback 
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
      * @returns {{ buffer: ArrayBufferLike; }} - The modified array 
@@ -1023,11 +1023,7 @@ class Mutar {
         }
 
         this.map(callbackDecorator, thisArg, littleEndian);
-
         const newArray = Utils.ArrayTypes[this.type].from(precursor);
-        if (littleEndian !== this.SYS_LITTLE_ENDIAN) {
-            this.constructor.flipEndianness(newArray);
-        }
 
         return newArray;
     }

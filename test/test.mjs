@@ -249,9 +249,18 @@ function objRewrittenBuildIns(littleEndian) {
     makeUnit(unit);
 
     // Initialize test object
-    const obj = new Mutar([0, 11, 22, 33, 44, 55, 66, 77, 88, 99], "Uint32", littleEndian);
+    const obj = new Mutar(new Uint32Array([0, 11, 22, 33, 44, 55, 66, 77, 88, 99]), null, littleEndian, true);
+    
+    const switchOrig = (littleEndian !== obj.SYS_LITTLE_ENDIAN);
+
+    if (switchOrig) {
+        obj.flipEndianness(false);
+    }
+    
     const cloneA = obj.clone();
     const cloneB = obj.clone();
+
+    console.log("OBJ ......", obj.array);
 
     function test(fn, subUnit, input, inputStr) {
         const passed = fn(input);
@@ -265,8 +274,6 @@ function objRewrittenBuildIns(littleEndian) {
             )
         }
     }
-
-    const switchOrig = (littleEndian !== obj.SYS_LITTLE_ENDIAN);
 
     function switchOutputEndiannessInt(output) {
         if (switchOrig) {
@@ -303,6 +310,34 @@ function objRewrittenBuildIns(littleEndian) {
             fn: (input) => areEqual(cloneA.fill(input), cloneB.array.fill(switchOutputEndiannessInt(input))),
             input: 100,
             inputStr: "cloneA.fill(INPUT) === cloneB.array.fill(INPUT)",
+        },
+        filter: {
+            fn: (input) => areEqual(obj.filter(input), switchOutputEndiannessArray(obj.array).filter(input)),
+            input: (val) => val > 44,
+            inputStr: "obj.filter(val > 44) === obj.array.filter(val > 44)",
+        },
+        find: {
+            fn: (input) => areEqual(obj.find(input), switchOutputEndiannessArray(obj.array).find(input)),
+            input: (val) => val > 40,
+            inputStr: "obj.find(val > 40) === obj.array.find(val > 40)",
+        },
+        findIndex: {
+            fn: (input) => areEqual(obj.find(input), switchOutputEndiannessArray(obj.array).find(input)),
+            input: (val) => val > 40,
+            inputStr: "obj.find(val > 40) === obj.array.find(val > 40)",
+        },
+        forEach: {
+            fn: () => {
+                obj.forEach((val, i) => {
+                    cloneA.view.setUint32(i*4, val, littleEndian);
+                });
+                obj.array.forEach((val, i) => {
+                    cloneB.view.setUint32(i*4, val, obj.SYS_LITTLE_ENDIAN);
+                });
+                return areEqual(cloneA.array, cloneB.array);
+            },
+            input: null,
+            inputStr: "obj.forEach((val => cloneA.view.setUint32) === obj.array.forEach((val => cloneB.view.setUint32)",
         }
     }
 
