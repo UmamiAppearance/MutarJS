@@ -1143,7 +1143,7 @@ class Mutar {
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
      * @returns {number} - The matching integer ("-1" if nothing matches)
      */
-    lastIndexOf(searchElement, fromIndex, littleEndian=null) {
+    lastIndexOf(searchElement, fromIndex=Number.MAX_SAFE_INTEGER, littleEndian=null) {
         return this.#searchElement("lastIndexOf", searchElement, fromIndex, littleEndian);
     }
 

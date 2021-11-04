@@ -249,7 +249,7 @@ function objRewrittenBuildIns(littleEndian) {
     makeUnit(unit);
 
     // Initialize test object
-    const obj = new Mutar(new Uint32Array([0, 11, 22, 33, 44, 55, 66, 77, 88, 99]), null, littleEndian, true);
+    const obj = new Mutar(new Uint32Array([0, 11, 22, 33, 44, 55, 66, 77, 88, 99, 11]), null, littleEndian);
     
     const switchOrig = (littleEndian !== obj.SYS_LITTLE_ENDIAN);
 
@@ -259,8 +259,6 @@ function objRewrittenBuildIns(littleEndian) {
     
     const cloneA = obj.clone();
     const cloneB = obj.clone();
-
-    console.log("OBJ ......", obj.array);
 
     function test(fn, subUnit, input, inputStr) {
         const passed = fn(input);
@@ -275,14 +273,14 @@ function objRewrittenBuildIns(littleEndian) {
         }
     }
 
-    function switchOutputEndiannessInt(output) {
+    function switchInt(output) {
         if (switchOrig) {
             return Mutar.flipEndiannessInt(output, "Uint32Array");
         }
         return output;
     }
 
-    function switchOutputEndiannessArray(testObj) {
+    function switchArray(testObj) {
         if (switchOrig) {
             return Mutar.flipEndianness(testObj, true);
         }
@@ -292,37 +290,37 @@ function objRewrittenBuildIns(littleEndian) {
 
     const routine = {
         at: {
-            fn: (input) => areEqual(obj.at(input), switchOutputEndiannessInt(obj.array.at(input))),
+            fn: (input) => areEqual(obj.at(input), switchInt(obj.array.at(input))),
             input: 2,
             inputStr: "obj.at(INPUT) === obj.array.at(INPUT)",
         },
         entries: {
-            fn: () => areEqual([...obj.entries()].toString(), [...switchOutputEndiannessArray(obj.array).entries()].toString()),
-            input: "",
+            fn: () => areEqual([...obj.entries()].toString(), [...switchArray(obj.array).entries()].toString()),
+            input: null,
             inputStr: "obj.entries() === obj.array.entries()",
         },
         every: {
-            fn: (input) => areEqual(obj.every(input), switchOutputEndiannessArray(obj.array).every(input)),
+            fn: (input) => areEqual(obj.every(input), switchArray(obj.array).every(input)),
             input: (val) => val < 100,
             inputStr: "obj.every(val < 100) === obj.array.every(val < 100)",
         },
         fill: {
-            fn: (input) => areEqual(cloneA.fill(input), cloneB.array.fill(switchOutputEndiannessInt(input))),
+            fn: (input) => areEqual(cloneA.fill(input), cloneB.array.fill(switchInt(input))),
             input: 100,
             inputStr: "cloneA.fill(INPUT) === cloneB.array.fill(INPUT)",
         },
         filter: {
-            fn: (input) => areEqual(obj.filter(input), switchOutputEndiannessArray(obj.array).filter(input)),
+            fn: (input) => areEqual(obj.filter(input), switchArray(obj.array).filter(input)),
             input: (val) => val > 44,
             inputStr: "obj.filter(val > 44) === obj.array.filter(val > 44)",
         },
         find: {
-            fn: (input) => areEqual(obj.find(input), switchOutputEndiannessArray(obj.array).find(input)),
+            fn: (input) => areEqual(obj.find(input), switchArray(obj.array).find(input)),
             input: (val) => val > 40,
             inputStr: "obj.find(val > 40) === obj.array.find(val > 40)",
         },
         findIndex: {
-            fn: (input) => areEqual(obj.find(input), switchOutputEndiannessArray(obj.array).find(input)),
+            fn: (input) => areEqual(obj.find(input), switchArray(obj.array).find(input)),
             input: (val) => val > 40,
             inputStr: "obj.find(val > 40) === obj.array.find(val > 40)",
         },
@@ -338,6 +336,31 @@ function objRewrittenBuildIns(littleEndian) {
             },
             input: null,
             inputStr: "obj.forEach((val => cloneA.view.setUint32) === obj.array.forEach((val => cloneB.view.setUint32)",
+        },
+        includes: {
+            fn: (input) => areEqual(obj.includes(input), obj.array.includes(switchInt(input))),
+            input: 77,
+            inputStr: "obj.includes(INPUT) === obj.array.includes(INPUT)",
+        },
+        indexOf: {
+            fn: (input) => areEqual(obj.indexOf(input), obj.array.indexOf(switchInt(input))),
+            input: 55,
+            inputStr: "obj.indexOf(INPUT) === obj.array.indexOf(INPUT)",
+        },
+        join: {
+            fn: (input) => areEqual(obj.join(input), switchArray(obj.array).join(input)),
+            input: "-",
+            inputStr: "obj.join('INPUT') === obj.array.join('INPUT')",
+        },
+        lastIndexOf: {
+            fn: (input) => areEqual(obj.lastIndexOf(input), obj.array.lastIndexOf(switchInt(input))),
+            input: 11,
+            inputStr: "obj.lastIndexOf(INPUT) === obj.array.lastIndexOf(INPUT)",
+        },
+        map: {
+            fn: (input) => areEqual(obj.map(input), switchArray(switchArray(obj.array).map(input))),
+            input: (val) => val + 10,
+            inputStr: "obj.map(val + 10) === obj.array.map(val + 10)",
         }
     }
 
