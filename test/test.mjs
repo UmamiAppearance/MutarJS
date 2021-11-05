@@ -96,7 +96,14 @@ function typeTests() {
     }
 }
 
-
+/**
+ * Tests the following functions:
+ * copyWithin
+ * keys
+ * reverse
+ * slice
+ * subarray
+ */
 function objPrimitiveRoutings() {
     const unit = "object-primitive-routings"
     makeUnit(unit);
@@ -235,9 +242,7 @@ function objPrimitiveRoutings() {
  * map
  * reduce
  * reduceRight
- * reverse
  * set
- * slice
  * some
  * sort
  * toLocaleString
@@ -361,7 +366,52 @@ function objRewrittenBuildIns(littleEndian) {
             fn: (input) => areEqual(obj.map(input), switchArray(switchArray(obj.array).map(input))),
             input: (val) => val + 10,
             inputStr: "obj.map(val + 10) === obj.array.map(val + 10)",
-        }
+        },
+        reduce: {
+            fn: (input) => areEqual(obj.reduce(input), switchArray(obj.array).reduce(input)),
+            input: (acc, cur) => acc + cur,
+            inputStr: "obj.reduce(acc + cur) === obj.array.reduce(acc + cur)", 
+        },
+        reduceRight: {
+            fn: (input) => areEqual(obj.reduceRight(input), switchArray(obj.array).reduceRight(input)),
+            input: (acc, cur) => acc + cur,
+            inputStr: "obj.reduceRight(acc + cur) === obj.array.reduceRight(acc + cur)", 
+        },
+        set: {
+            fn: (input) => {
+                cloneA.set(input);
+                cloneB.array.set(input);
+                return areEqual(cloneA.array, switchArray(cloneB.array));
+            },
+            input: [100, 200, 300, 400, 500, 600, 700, 800, 900, 42, 1000],
+            inputStr: "obj.set(INPUT) === obj.array.set(INPUT)",
+
+        },
+        some: {
+            fn: (input) => areEqual(obj.some(input), switchArray(obj.array).some(input)),
+            input: (val) => val > 90,
+            inputStr: "obj.some(val > 90) === obj.array.some(val > 90)",
+        },
+        sort: {
+            fn: () => areEqual(cloneA.sort(), switchArray(cloneB.array.sort())),
+            input: null,
+            inputStr: "cloneA.sort() === cloneB.sort()",
+        },
+        toLocaleString: {
+            fn: () => areEqual(obj.toLocaleString(), switchArray(obj.array).toLocaleString()),
+            input: null,
+            inputStr: "obj.toLocaleString() === obj.array.toLocaleString()",
+        },
+        toString: {
+            fn: () => areEqual(obj.toString(), switchArray(obj.array).toString()),
+            input: null,
+            inputStr: "obj.toString() === obj.array.toString()",
+        },
+        values: {
+            fn: () => areEqual([...obj.values()], [...switchArray(obj.array).values()]),
+            input: null,
+            inputStr: "obj.values() === obj.array.values()",
+        },
     }
 
     for (const subUnit in routine) {
