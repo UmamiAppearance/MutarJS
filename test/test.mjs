@@ -96,138 +96,11 @@ function typeTests() {
     }
 }
 
-/**
- * Tests the following functions:
- * copyWithin
- * keys
- * reverse
- * slice
- * subarray
- */
-function objPrimitiveRoutings() {
-    const unit = "object-primitive-routings"
-    makeUnit(unit);
-
-    // Initialize test object
-    const obj = new Mutar("dlroWolleH");
-
-
-    // ------------------------------------------------------------------------------------------------ //
-    // testSlice - call build in function "slice" from root
-    // expect: decoded "Wolle" (german word for wool)
-    
-    nextTest(unit);
-
-    const inputSlice = `MutarUint8Array(${obj.array.join()}).slice(4, -1)`;
-    const slice = obj.slice(4, -1);
-    const expectedSlice = "Wolle";
-    const outputSlice = Decoder.decode(slice);
-
-    if (outputSlice !== expectedSlice) {
-        makeError(
-            unit,
-            "slice",
-            inputSlice,
-            outputSlice,
-            expectedSlice
-        );
-    }
-
-
-    // ------------------------------------------------------------------------------------------------ //
-    // testReverse - call build in function "reverse" from root
-    // expect: decoded "HelloWorld"
-    
-    nextTest(unit);
-
-    const inputReverse = `MutarUint8Array(${obj.array.join()}).reverse()`
-    obj.reverse();
-
-    const outputReverse = Decoder.decode(obj.array);
-    const expectedReverse = "HelloWorld";
-
-    if (outputReverse !== expectedReverse) {
-        makeError(
-            unit,
-            "reverse",
-            inputReverse,
-            outputReverse,
-            expectedReverse
-        );
-    }
-
-
-    // ------------------------------------------------------------------------------------------------ //
-    // testCopyWithin - call build in function "copyWithin" from root
-    // expect: decoded "HelloHello"
-    
-    nextTest(unit);
-
-    const inputCopyWithin = `MutarUint8Array(${obj.array.join()}).copyWithin(5, 0, 5)`
-    obj.copyWithin(5, 0, 5);
-
-    const outputCopyWithin = Decoder.decode(obj.array);
-    const expectedCopyWithin = "HelloHello";
-
-    if (outputCopyWithin !== expectedCopyWithin) {
-        makeError(
-            unit,
-            "copyWithin",
-            inputCopyWithin,
-            outputCopyWithin,
-            expectedCopyWithin
-        );
-    }
-
-
-    // ------------------------------------------------------------------------------------------------ //
-    // testSubarray - call build in function "subarray" from root
-    // expect: decoded "HelloolleH" after reversing the subarray
-    
-    nextTest(unit);
-
-    const inputSubarray = `MutarUint8Array(${obj.array.join()}).subarray(5).reverse()`
-    const sub = obj.subarray(5);
-    sub.reverse();
-
-    const outputSubarray = Decoder.decode(obj.array);
-    const expectedSubarray = "HelloolleH";
-
-    if (outputSubarray !== expectedSubarray) {
-        makeError(
-            unit,
-            "subarray",
-            inputSubarray,
-            outputSubarray,
-            expectedSubarray
-        );
-    }
-
-
-    // ------------------------------------------------------------------------------------------------ //
-    // testKeys - call build in function "keys" from root
-    // expect: string "0123456789" after joining keys iterator
-    
-    nextTest(unit);
-
-    const inputKeys = `MutarUint8Array(${obj.array.join()}).keys().join("")`
-    const outputKeys = [...obj.keys()].join("");
-    const expectedKeys = "0123456789";
-
-    if (outputKeys !== expectedKeys) {
-        makeError(
-            unit,
-            "keys",
-            inputKeys,
-            outputKeys,
-            expectedKeys
-        );
-    }
-}
 
 /**
  * Tests the following functions:
  * at
+ * copyWithin
  * entries
  * every
  * fill
@@ -238,19 +111,23 @@ function objPrimitiveRoutings() {
  * includes
  * indexOf
  * join
+ * keys
  * lastIndexOf
  * map
  * reduce
  * reduceRight
+ * reverse
  * set
+ * slice
  * some
  * sort
+ * subarray
  * toLocaleString
  * toString
  * values
  */
-function objRewrittenBuildIns(littleEndian) {
-    const unit = appendEndiannessStr("rewritten-build-ins", littleEndian);
+function objBuildIns(littleEndian) {
+    const unit = appendEndiannessStr("build-ins", littleEndian);
     makeUnit(unit);
 
     // Initialize test object
@@ -298,6 +175,11 @@ function objRewrittenBuildIns(littleEndian) {
             fn: (input) => areEqual(obj.at(input), switchInt(obj.array.at(input))),
             input: 2,
             inputStr: "obj.at(INPUT) === obj.array.at(INPUT)",
+        },
+        copyWithin: {
+            fn: (input) => areEqual(cloneA.copyWithin(...input), cloneB.array.copyWithin(...input)),
+            input: [3, 5, 7],
+            inputStr: "cloneA.copyWithin(INPUT) === cloneB.array.copyWithin(INPUT)",
         },
         entries: {
             fn: () => areEqual([...obj.entries()].toString(), [...switchArray(obj.array).entries()].toString()),
@@ -357,6 +239,11 @@ function objRewrittenBuildIns(littleEndian) {
             input: "-",
             inputStr: "obj.join('INPUT') === obj.array.join('INPUT')",
         },
+        keys: {
+            fn: () => areEqual([...obj.keys()], [...obj.array.keys()]),
+            input: null,
+            inputStr: "obj.keys() === obj.array.keys()",
+        },
         lastIndexOf: {
             fn: (input) => areEqual(obj.lastIndexOf(input), obj.array.lastIndexOf(switchInt(input))),
             input: 11,
@@ -377,6 +264,16 @@ function objRewrittenBuildIns(littleEndian) {
             input: (acc, cur) => acc + cur,
             inputStr: "obj.reduceRight(acc + cur) === obj.array.reduceRight(acc + cur)", 
         },
+        reverse: {
+            fn: () => {
+                const orig = obj.array.slice();
+                obj.reverse();
+                obj.array.reverse();
+                return areEqual(orig, obj.array);
+            },
+            input: null,
+            inputStr: "obj.reverse() === array.obj.reverse()",
+        },
         set: {
             fn: (input) => {
                 cloneA.set(input);
@@ -387,6 +284,11 @@ function objRewrittenBuildIns(littleEndian) {
             inputStr: "obj.set(INPUT) === obj.array.set(INPUT)",
 
         },
+        slice: {
+            fn: (input) => areEqual(obj.slice(input), obj.array.slice(input)),
+            input: [2, 5],
+            inputStr: "obj.slice(INPUT) === obj.array.slice(INPUT)",
+        },
         some: {
             fn: (input) => areEqual(obj.some(input), switchArray(obj.array).some(input)),
             input: (val) => val > 90,
@@ -396,6 +298,16 @@ function objRewrittenBuildIns(littleEndian) {
             fn: () => areEqual(cloneA.sort(), switchArray(cloneB.array.sort())),
             input: null,
             inputStr: "cloneA.sort() === cloneB.sort()",
+        },
+        subarray: {
+            fn: (input) => {
+                const subA = obj.subarray(...input);
+                const subB = obj.array.subarray(...input);
+                obj.view.setUint32(12, 333, littleEndian);
+                return areEqual(subA, obj.array.slice(...input)) === areEqual(subB, obj.array.slice(...input))
+            },
+            input: [2, 7],
+            inputStr: "obj.subarray(INPUT) === obj.array.subarray(INPUT)",
         },
         toLocaleString: {
             fn: () => areEqual(obj.toLocaleString(), switchArray(obj.array).toLocaleString()),
@@ -903,10 +815,9 @@ function main() {
     
     typeTests();
     
-    objPrimitiveRoutings();
 
     for (const littleEndian of [true, false]) {
-        objRewrittenBuildIns(littleEndian);
+        objBuildIns(littleEndian);
     }
     
     objConversionTests();
