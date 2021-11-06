@@ -336,7 +336,9 @@ function objBuildIns(littleEndian) {
     }
 }
 
-
+/**
+ * Convert obj into several different kind of typed arrays.
+ */
 function objConversionTests() {
     const unit = "object-conversions";
     makeUnit(unit);
@@ -608,8 +610,38 @@ function objConversionTests() {
             expectedConset
         );
     }
+
+    // ------------------------------------------------------------------------------------------------ //
+    // testPurgeTrim - convert to Uint16, insert 3 zeros at random positions,
+    // convert back and purge all zeros
+    // expect: original expectConset "Hello World!"
+
+    nextTest(unit);
+
+    const inputPurgeTrim = `MutarUint8Array(${obj.array.join()}).convert(Uint16Array)`;
+    
+    obj.convert(Uint16Array);
+    for (let i=3; i--;) {
+        obj.insert(Math.floor(obj.length * Math.random()), 0);
+    }
+    obj.convert(Uint8Array, "purge");
+
+    const outputPurgeTrim = Decoder.decode(obj.array);
+    
+    if (outputPurgeTrim !== expectedConset) {
+        makeError(
+            unit,
+            "convertTrimPurge",
+            inputPurgeTrim,
+            outputPurgeTrim,
+            expectedConset
+        );
+    }
 }
 
+/**
+ * Append and remove values from the object in both little and big endian. 
+ */
 function objAppendDelete(littleEndian) {
     const unit = appendEndiannessStr("object-append-delete-values", littleEndian);
     makeUnit(unit);
@@ -825,11 +857,9 @@ function main() {
     for (const littleEndian of [true, false]) {
         objAppendDelete(littleEndian);
     }
-    
-    console.log("results");
 
     if (!result.errors) delete result.errorMessages;
-    console.log(JSON.stringify(result, null, 4));
+    console.log(`results ${JSON.stringify(result, null, 4)}`);
     
     if (result.errors) {
         console.error(`${result.errors} error${(result.errors > 1) ? "s" : ""} occurred!`);
