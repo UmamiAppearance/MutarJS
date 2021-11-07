@@ -219,7 +219,7 @@ class Mutar {
      * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
      * @returns {string} - The name of the TypedArray constructor as string e.g. "Int8Array"
      */ 
-     static typeFromInput(type) {
+    static typeFromInput(type) {
         if (typeof(type) === "function") {
             type = type.name;
         }
@@ -463,7 +463,7 @@ class Mutar {
      * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false
      * @returns {Array} - Returns the new TypedArray and the detached value
      */
-     static detach(obj, index, littleEndian=SYS_LITTLE_ENDIAN) {
+    static detach(obj, index, littleEndian=SYS_LITTLE_ENDIAN) {
 
         index = Math.min(index, obj.length-1);
         let detachedArray, newArray;
@@ -528,7 +528,7 @@ class Mutar {
      * @param {boolean} [adjustEndianness=false] - Optional. If true, the endianness of the input bytes are getting flipped    
      * @returns {Object} - A new Mutar object
      */
-     static from(input, type, littleEndian=SYS_LITTLE_ENDIAN, adjustEndianness=false) {
+    static from(input, type, littleEndian=SYS_LITTLE_ENDIAN, adjustEndianness=false) {
         return new Mutar(input, type, littleEndian, adjustEndianness);
     }
 
@@ -848,9 +848,9 @@ class Mutar {
      * some
      * 
      * Walks through the array, finds the first match
-     * and returns and object which holds the boolean
+     * and returns an object, which holds the boolean
      * if a there was a match, the matching value and
-     * the index:
+     * the index.
      * 
      * @param {function} callback - A function to call
      * @param {Object} thisArg - This object for the callback

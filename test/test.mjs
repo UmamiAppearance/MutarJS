@@ -526,10 +526,35 @@ function objConversionTests() {
         );
     }
 
+    
+    // ------------------------------------------------------------------------------------------------ //
+    // testSetAt - set the third integer to 116, and test if the array
+    // has the value at the position afterwards (change it back at the 
+    // end)
+    // expect: value 116 at index 2, after setting it
+
+    nextTest(unit);
+
+    const inputSetAt = `MutarUint16Array(${clone.array.join()}).setAt(2, 116);`;
+
+    clone.setAt(2, 116);
+    const expectedSetAt = 116;
+    const outputSetAt = clone.at(2);
+
+    if (outputSetAt !== expectedSetAt) {
+        makeError(
+            unit,
+            "testSetAt",
+            inputSetAt,
+            outputSetAt,
+            expectedSetAt
+        );
+    }
+
 
     // ------------------------------------------------------------------------------------------------ //
     // testConvertIntModeBack - convert Uint16 back to Uint8 intMode 
-    // expect: former String "Hor" after converting back and decoding
+    // expect: string "Hot" after converting back and decoding
 
     nextTest(unit);
 
@@ -537,15 +562,16 @@ function objConversionTests() {
 
     clone.convert("Uint8", false, true);
 
+    const expectedConvertIntModeBack = "Hot";
     const outputConvertIntModeBack = Decoder.decode(clone.array);
 
-    if (outputConvertIntModeBack !== expectedConvertIntModeForce) {
+    if (outputConvertIntModeBack !== expectedConvertIntModeBack) {
         makeError(
             unit,
             "testConvertIntModeBack",
             inputConvertIntModeBack,
             outputConvertIntModeBack,
-            expectedConvertIntModeForce
+            expectedConvertIntModeBack
         );
     }
 

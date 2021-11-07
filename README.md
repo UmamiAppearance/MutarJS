@@ -5,8 +5,8 @@
 
 In reality _TypedArrays_ are not mutable in terms of growing and shrinking. To emulate mutability a new array with the desired properties is created. This comes to a price of course. Every time the array length "changes", a new TypedArray is allocated in memory. Keep that in mind when using it, if this is critical to you.
 
-### Endianness
-**Mutar** objects are designed to be aware of endianness. If not specified the the endianness of the system is used, which is most likely little endian. Despite this fact, sometimes data (e.g. network related) differ in its endianness. It is possible to store them in a **Mutar** object and interact with it but keep the given byte order.  
+#### Endianness
+**Mutar** objects are designed to be aware of endianness. If not specified the the endianness of the system is used, which is most likely little endian. Despite this fact, sometimes data (e.g. network related) differ in its endianness. It is possible to store them in a **Mutar** object and interact with it but keep the given byte order. (Values which are added or got are converted to the according endianness). 
 
 ## Toolkit
 If you want to work with an existing TypedArray, you can use **Mutar** to analyse and modify it. Let's for example take a Uint32Array for the integer **400**.
@@ -71,7 +71,9 @@ const concat8 = Mutar.convert(bigInt, "Uint8"); // -> Unt8Array(8) [ 144, 1, 0, 
 // trimming zero padding
 // the two zeros at byte index 2 and 3 are know part
 // a whole stream. The null bytes at the end of the array
-// can still get trimmed.
+// can still get trimmed. (You can get rid of them by
+// setting the second argument to true, if you do so
+// all zeros are getting purged. Be careful!)
 const trimmed = Mutar.trim(concat8);           // -> Uint8Array(6) [ 144, 1, 0, 0, 144, 1 ]
 
 // By going back to Uint32 the missing padding is added "again"
