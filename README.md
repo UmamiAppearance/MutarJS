@@ -6,13 +6,13 @@
 In reality _TypedArrays_ are not mutable in terms of growing and shrinking. To emulate mutability a new array with the desired properties is created. This comes to a price of course. Every time the array length "changes", a new TypedArray is allocated in memory. Keep that in mind when using it, if this is critical to you.
 
 #### Endianness
-**Mutar** objects are designed to be aware of endianness. If not specified the the endianness of the system is used, which is most likely little endian. Despite this fact, sometimes data (e.g. network related) differ in its endianness. It is possible to store them in a **Mutar** object and interact with it but keep the given byte order. (Values which are added or got are converted to the according endianness). 
+**Mutar** objects are designed to be aware of endianness. If not specified, the the endianness of the system is used, which is most likely little endian. Despite this fact, sometimes data (e.g. network related) differ in its endianness. It is possible to store them in a **Mutar** object, interact with it but keep the given byte order. (Values which are added or got are converted to the according endianness). 
 
 ## Toolkit
 If you want to work with an existing TypedArray, you can use **Mutar** to analyse and modify it. Let's for example take a Uint32Array for the integer **400**.
 
 ```js
-const Uint32 = new Uint32Array([400])
+const Uint32 = new Uint32Array([400]);
 ```
 Mutar comes with some functions to analyse the given object. (Let us forget for a moment that we exactly know what kind of object it is).
 
@@ -24,7 +24,6 @@ const regularArray = [400];
 // Test if is a TypedArray //
 Mutar.isTypedArray(Uint32);                     // -> true
 Mutar.isTypedArray(regularArray);               // -> false
-
 
 // Get the type //
 Mutar.getType(Uint32);                          // -> "Uint32Array"
@@ -53,31 +52,35 @@ Let's now take a look at the fun part: the modification.
 // The individual bytes for this number are:
 // [ 144, 1, 0, 0 ] (little endian byte order)
 
-const Uint32 = new Uint32Array([400]);          // -> Uint32Array(1) [ 400 ]
+const Uint32 = new Uint32Array([400]);          // -> Uint32Array(1)    [ 400 ]
 
 // easy start: create a copy (clone) of a TypedArray
-// (changes on the clone will not effect the original)
-const clone = Mutar.clone(Uint32);              // -> Uint32Array(1) [ 400 ]
+// (changes on the clone will not affect the original)
+const clone = Mutar.clone(Uint32);              // -> Uint32Array(1)    [ 400 ]
 
 // concatenation of arrays (let's join the original and the clone)
-const concat = Mutar.concat(Uint32, clone);     // -> Uint32Array(2) [ 400, 400 ]
+const concat = Mutar.concat(Uint32, clone);     // -> Uint32Array(2)    [ 400, 400 ]
+
+// change a value of the array
+Mutar.setAt(concat, 1, 500);                    // -> Uint32Array(2)    [ 400, 500 ]
 
 // converting (e.g. BigInt64)
-const bigInt = Mutar.convert(concat, "BigInt"); // -> BigInt64Array(1) [ 1717986918800n ]
+const bigInt = Mutar.convert(concat, "BigInt"); // -> BigInt64Array(1)  [ 2147483648400n ]
 
 // converting to individual bytes
-const concat8 = Mutar.convert(bigInt, "Uint8"); // -> Unt8Array(8) [ 144, 1, 0, 0, 144, 1, 0, 0]
+const concat8 = Mutar.convert(bigInt, "Uint8"); // -> Unt8Array(8)      [ 144, 1, 0, 0, 244, 1, 0, 0]
 
 // trimming zero padding
 // the two zeros at byte index 2 and 3 are know part
 // a whole stream. The null bytes at the end of the array
 // can still get trimmed. (You can get rid of them by
 // setting the second argument to true, if you do so
-// all zeros are getting purged. Be careful!)
-const trimmed = Mutar.trim(concat8);           // -> Uint8Array(6) [ 144, 1, 0, 0, 144, 1 ]
+// all zeros are getting purged. Be careful with that
+// option.)
+const trimmed = Mutar.trim(concat8);           // -> Uint8Array(6)      [ 144, 1, 0, 0, 244, 1 ]
 
 // By going back to Uint32 the missing padding is added "again"
-Mutar.convert(trimmed, Uint32Array)            // -> Uint32Array(2) [ 400, 400 ] | Unt8Array(8) [ 144, 1, 0, 0, 144, 1, 0, 0]
+Mutar.convert(trimmed, Uint32Array)            // -> Uint32Array(2)     [ 400, 500 ] | Unt8Array(8) [ 144, 1, 0, 0, 244, 1, 0, 0]
 
 
 
