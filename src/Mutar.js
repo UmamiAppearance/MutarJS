@@ -247,14 +247,13 @@ class Mutar {
 
 
     /**
-     * Concatenates all given arrays into one. 
-     * By default they must be of the same type
-     * but conversion to the type of the first
-     * element can be forced, by literally passing
-     * the string "force".
+     * Concatenates all given arrays into one. By default
+     * each array one must be of the same type but conversion
+     * to the type of the first element can be forced, by
+     * literally passing the string "force".
      * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
-     * @param  {(buffer[]|string[])} args - At least one Typed array for concatenation must be handed over. Additionally it takes the strings "force" and "trim".
+     * @param  {(buffer[]|string[])} args - At least one Typed array for concatenation must be handed over. Additionally it takes the strings "force", "trim", "purge" and "intMode", which are handed over to the convert function.
      * @returns {{ buffer: ArrayBufferLike; }} - A concatenated new TypedArray of the input arrays
      */
     static concat(obj, ...args) {
@@ -273,11 +272,14 @@ class Mutar {
             throw new TypeError(`Your provided input is not a TypedArray: "${errorObj}" (${errorObj.constructor.name})`);
         }
 
+        // parameters for type conversion
         const force = argsIncludes("force");
         let trim = argsIncludes("trim");
         if (argsIncludes("purge")) {
             trim = "purge";
         }
+        const intMode = argsIncludes("intMode");
+
 
         if (!Mutar.isTypedArray(obj)) {
             throwTypeError(obj);
@@ -301,7 +303,7 @@ class Mutar {
             let next = nextObj; 
             if (nextObj.constructor.name !== type) {
                 if (force) {
-                    next = Mutar.convert(nextObj, type, trim);
+                    next = Mutar.convert(nextObj, type, trim, intMode);
                 } else {
                     throw new TypeError(`
                         You are trying to concatenate different types of arrays:

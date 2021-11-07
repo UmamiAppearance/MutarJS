@@ -48,27 +48,39 @@ Let's now take a look at the fun part: the modification.
 
 ### Modification
 ```js
-// again we are taking the Uint32Array of the Integer 400
+// Again we are taking the Uint32Array of the Integer 400
 // The individual bytes for this number are:
 // [ 144, 1, 0, 0 ] (little endian byte order)
 
-const Uint32 = new Uint32Array([400]);          // -> Uint32Array(1)    [ 400 ]
+const Uint32 = new Uint32Array([400]);                      // -> Uint32Array(1)    [ 400 ]
 
-// easy start: create a copy (clone) of a TypedArray
+// Easy start: create a copy (clone) of a TypedArray
 // (changes on the clone will not affect the original)
-const clone = Mutar.clone(Uint32);              // -> Uint32Array(1)    [ 400 ]
+const clone = Mutar.clone(Uint32);                          // -> Uint32Array(1)    [ 400 ]
 
-// concatenation of arrays (let's join the original and the clone)
-const concat = Mutar.concat(Uint32, clone);     // -> Uint32Array(2)    [ 400, 400 ]
+// Concatenation of arrays (let's join the original, the clone and a fresh array)
+const fresh = new Uint16Array([500, 600]);                  // -> Uint16Array(2)    [500, 600]
+let concat = Mutar.concat(Uint32, clone, fresh);            // -> TypeError
 
-// change a value of the array
-Mutar.setAt(concat, 1, 500);                    // -> Uint32Array(2)    [ 400, 500 ]
+// Seems like the objects need to be converted before they fit together.
+// But this can be forced and done in one step in this case (if you want
+// more control, do the conversion in separate steps before).
 
-// converting (e.g. BigInt64)
-const bigInt = Mutar.convert(concat, "BigInt"); // -> BigInt64Array(1)  [ 2147483648400n ]
+concat = Mutar.concat(Uint32, clone, fresh, "force");       // -> Uint32Array(3)    [ 400, 400, 39322100 ]
+
+// Yeah, two Uint16 values fit in one Uint32, but this is not what we want in this case
+// Luckily we can convert in another mode -> "intMode"
+
+concat = Mutar.concat(Uint32, clone, fresh, "force", "intMode");
+                                                            // -> Uint32Array(3)    [ 400, 400, 500, 600 ]
+
+// Bingo. Let's take a closer look at the type conversion.
+
+// conversion (e.g. BigInt64)
+const bigInt = Mutar.convert(concat, "BigInt");             // -> BigInt64Array(2)  [ 1717986918800n, 2576980378100n ]
 
 // converting to individual bytes
-const concat8 = Mutar.convert(bigInt, "Uint8"); // -> Unt8Array(8)      [ 144, 1, 0, 0, 244, 1, 0, 0]
+const concat8 = Mutar.convert(bigInt, "Uint8");             // -> Unt8Array(8)      [ 144, 1, 0, 0, 244, 1, 0, 0]
 
 // trimming zero padding
 // the two zeros at byte index 2 and 3 are know part
@@ -77,10 +89,17 @@ const concat8 = Mutar.convert(bigInt, "Uint8"); // -> Unt8Array(8)      [ 144, 1
 // setting the second argument to true, if you do so
 // all zeros are getting purged. Be careful with that
 // option.)
-const trimmed = Mutar.trim(concat8);           // -> Uint8Array(6)      [ 144, 1, 0, 0, 244, 1 ]
+const trimmed = Mutar.trim(concat8);                // -> Uint8Array(6)     [ 144, 1, 0, 0, 244, 1 ]
 
 // By going back to Uint32 the missing padding is added "again"
-Mutar.convert(trimmed, Uint32Array)            // -> Uint32Array(2)     [ 400, 500 ] | Unt8Array(8) [ 144, 1, 0, 0, 244, 1, 0, 0]
+Mutar.convert(trimmed, Uint32Array)                 // -> Uint32Array(2)    [ 400, 500 ] | UI8 [ 144, 1, 0, 0, 244, 1, 0, 0]
+
+
+
+
+
+// change a value of the array
+Mutar.setAt(concat, 1, 500);                        // -> Uint32Array(2)    [ 400, 500 ]
 
 
 
