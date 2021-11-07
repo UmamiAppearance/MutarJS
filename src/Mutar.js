@@ -251,6 +251,7 @@ class Mutar {
      * each array one must be of the same type but conversion
      * to the type of the first element can be forced, by
      * literally passing the string "force".
+     * TODO: think about intModeForce??
      * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
      * @param  {(buffer[]|string[])} args - At least one Typed array for concatenation must be handed over. Additionally it takes the strings "force", "trim", "purge" and "intMode", which are handed over to the convert function.
@@ -371,8 +372,8 @@ class Mutar {
 
             // Set the byte difference. A negative value
             // means, that the new array is bigger and no
-            // data loss is to be feared, therefore set to
-            // zero (false).
+            // data loss is to be feared, therefore byteDiff
+            // is set to zero (false).
             const byteDiff = Math.max(curBytesPerElem-newBytesPerElem, 0);
             const testIntegrity = (intMode !== "force" && byteDiff);
             
@@ -400,7 +401,7 @@ class Mutar {
                     // Uint16Array(2) [ 00000001 10010000 ] = 400
                     // Uint8Array(1)  [ -------- 10010000 ] = 144
                     const expectedVal = num(view[getNew](curOffset, littleEndian), bigInt);
-                    if (val !== expectedVal) throw new IntegrityError("Converting the array will cause data loss. If you explicity want this, pass the string 'force' to param intMode");
+                    if (val !== expectedVal) throw new IntegrityError("Converting the array will cause data loss. If you explicitly want this, pass the string 'force' to param intMode");
                 }
 
                 const newOffset = i * newBytesPerElem;

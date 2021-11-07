@@ -67,20 +67,27 @@ let concat = Mutar.concat(Uint32, clone, fresh);            // -> TypeError
 // more control, do the conversion in separate steps before).
 
 concat = Mutar.concat(Uint32, clone, fresh, "force");       // -> Uint32Array(3)    [ 400, 400, 39322100 ]
+                                                            //              UI8     [ 144, 1, 0, 0,
+                                                            //                        144, 1, 0, 0,
+                                                            //                        244, 1, 88, 2 ]
 
-// Yeah, two Uint16 values fit in one Uint32, but this is not what we want in this case
+// Two Uint16 values fit in one Uint32, but this is not what we want in this case
 // Luckily we can convert in another mode -> "intMode"
 
 concat = Mutar.concat(Uint32, clone, fresh, "force", "intMode");
                                                             // -> Uint32Array(3)    [ 400, 400, 500, 600 ]
 
-// Bingo. Let's take a closer look at the type conversion.
+// Let's take a closer look at the type conversion.
 
 // conversion (e.g. BigInt64)
 const bigInt = Mutar.convert(concat, "BigInt");             // -> BigInt64Array(2)  [ 1717986918800n, 2576980378100n ]
 
 // converting to individual bytes
-const concat8 = Mutar.convert(bigInt, "Uint8");             // -> Unt8Array(8)      [ 144, 1, 0, 0, 244, 1, 0, 0]
+const Uint8 = Mutar.convert(bigInt, "Uint8");               // -> Unt8Array(16)     [ 144, 1, 0, 0,
+                                                            //                        144, 1, 0, 0,
+                                                            //                        244, 1, 0, 0,
+                                                            //                         88, 2, 0, 0 ] 
+
 
 // trimming zero padding
 // the two zeros at byte index 2 and 3 are know part
