@@ -183,12 +183,43 @@ class Mutar {
     // -------------- > static methods | toolkit < -------------- //
 
 
+    // -------------------- > type analysis < ------------------- //
+
+    /**
+     * Get Type from "obj.constructor.name"
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
+     * @returns {string} - Returns the name of the constructor (Uint8Array, Int16Array, ...) 
+     */
+    static getType(obj) {
+        return obj.constructor.name;
+    }
+  
+    /**
+     * Test if object is a typed array.
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
+     * @returns {boolean} - Only true if input object is a TypedArray
+     */
+    static isTypedArray(obj) {
+        return obj.constructor.name in Utils.ArrayTypes;
+    }
+
+    /**
+     * Test if array is of type "type"
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Should be a TypedArray, but any object can get tested for the following name as string
+     * @param {string} type - The constructor name the former arg gets tested against. 
+     * @returns {boolean} - True if "obj.constructor.name" equals "type" 
+     */
+    static isTypeOf(obj, type) {
+        type = Mutar.typeFromInput(type);
+        return obj.constructor.name === type;
+    }
+
     /** 
      * Extract the type from a TypedArray constructor
      * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
      * @returns {string} - The name of the TypedArray constructor as string e.g. "Int8Array"
      */ 
-    static typeFromInput(type) {
+     static typeFromInput(type) {
         if (typeof(type) === "function") {
             type = type.name;
         }
@@ -203,52 +234,7 @@ class Mutar {
     }
 
 
-    /**
-     * Get Type from "obj.constructor.name"
-     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
-     * @returns {string} - Returns the name of the constructor (Uint8Array, Int16Array, ...) 
-     */
-    static getType(obj) {
-        return obj.constructor.name;
-    }
-
-    
-    /**
-     * Test if object is a typed array.
-     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
-     * @returns {boolean} - Only true if input object is a TypedArray
-     */
-    static isTypedArray(obj) {
-        return obj.constructor.name in Utils.ArrayTypes;
-    }
-
-
-    /**
-     * Test if array is of type "type"
-     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Should be a TypedArray, but any object can get tested for the following name as string
-     * @param {string} type - The constructor name the former arg gets tested against. 
-     * @returns {boolean} - True if "obj.constructor.name" equals "type" 
-     */
-    static isTypeOf(obj, type) {
-        type = Mutar.typeFromInput(type);
-        return obj.constructor.name === type;
-    }
-
-
-    /**
-     * Creates a new Mutar object from various inputs
-     * (equivalent to "new Mutar")
-     * 
-     * @param {({ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; } | number[] | string)} input - Mut be set. Can be a TypedArray, a string or buffer and regular array
-     * @param {string|function} [type] - A string or TypedArray function that must be specified for buffer and regular arrays
-     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - Optional. A boolean that sets little endian to true/false 
-     * @param {boolean} [adjustEndianness=false] - Optional. If true, the endianness of the input bytes are getting flipped    
-     * @returns {Object} - A new Mutar object
-     */
-    static from(input, type, littleEndian=SYS_LITTLE_ENDIAN, adjustEndianness=false) {
-        return new Mutar(input, type, littleEndian, adjustEndianness);
-    }
-
+    // -------------------- > main tools < -------------------- // 
 
     /**
      * Make a copy of the given array
@@ -388,7 +374,7 @@ class Mutar {
             const byteDiff = Math.max(curBytesPerElem-newBytesPerElem, 0);
             const testIntegrity = (intMode !== "force" && byteDiff);
             
-            if (!view) view = new DataView(obj.buffer);
+            view = view || new DataView(obj.buffer);
 
             newArray = new Utils.ArrayTypes[type](obj.length);
             const nView = new DataView(newArray.buffer);
@@ -468,6 +454,30 @@ class Mutar {
 
 
     /**
+     * Returns a new TypedArray from the given obj,
+     * the element of the given index is excluded
+     * and also returned.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param {number} index - Positive or negative index key. Over- or underflow cannot happen.
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false
+     * @returns {Array} - Returns the new TypedArray and the detached value
+     */
+     static detach(obj, index, littleEndian=SYS_LITTLE_ENDIAN) {
+
+        index = Math.min(index, obj.length-1);
+        let detachedArray, newArray;
+        [newArray, detachedArray] = Mutar.splice(obj, index, 1, littleEndian);
+
+        if (littleEndian !== SYS_LITTLE_ENDIAN) {
+            Mutar.flipEndianness(detachedArray);
+        }
+
+        return [newArray, detachedArray.at(0)];
+    }
+
+
+    /**
      * Takes an object, reverses the individual integers
      * and returns it.
      * 
@@ -509,26 +519,17 @@ class Mutar {
 
 
     /**
-     * Returns a new TypedArray from the given obj,
-     * the element of the given index is excluded
-     * and also returned.
+     * Creates a new Mutar object from various inputs
+     * (equivalent to "new Mutar")
      * 
-     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
-     * @param {number} index - Positive or negative index key. Over- or underflow cannot happen.
-     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false
-     * @returns {Array} - Returns the new TypedArray and the detached value
+     * @param {({ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; } | number[] | string)} input - Mut be set. Can be a TypedArray, a string or buffer and regular array
+     * @param {string|function} [type] - A string or TypedArray function that must be specified for buffer and regular arrays
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - Optional. A boolean that sets little endian to true/false 
+     * @param {boolean} [adjustEndianness=false] - Optional. If true, the endianness of the input bytes are getting flipped    
+     * @returns {Object} - A new Mutar object
      */
-    static detach(obj, index, littleEndian=SYS_LITTLE_ENDIAN) {
-
-        index = Math.min(index, obj.length-1);
-        let detachedArray, newArray;
-        [newArray, detachedArray] = Mutar.splice(obj, index, 1, littleEndian);
-
-        if (littleEndian !== SYS_LITTLE_ENDIAN) {
-            Mutar.flipEndianness(detachedArray);
-        }
-
-        return [newArray, detachedArray.at(0)];
+     static from(input, type, littleEndian=SYS_LITTLE_ENDIAN, adjustEndianness=false) {
+        return new Mutar(input, type, littleEndian, adjustEndianness);
     }
 
 
@@ -557,6 +558,26 @@ class Mutar {
 
 
     /**
+     * Pops one integer from a given array.
+     * Returns the new array and the removed
+     * int.
+     * 
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false
+     * @param {Object} [view] - If a view of the array is already defined, pass it here
+     * @returns {Array} - Returns the new TypedArray and the new array length
+     * 
+     */
+    static pop(obj, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
+        view = view || new DataView(obj.buffer);
+        const get = Utils.ViewMethods[obj.constructor.name].get;
+        const lastIntIndex = (obj.length-1) * obj.BYTES_PER_ELEMENT;
+        const popped = view[get](lastIntIndex, littleEndian);
+        return [obj.slice(0, -1), popped];
+    }
+
+
+    /**
      * Pushes values to the end of a given array.
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
      * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
@@ -570,35 +591,29 @@ class Mutar {
 
 
     /**
-     * Pops one integer from a given array.
-     * Returns the new array and the removed
-     * int.
-     * 
+     * Sets value at the array at the given index.
+     * Endian aware.
+     *  
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param {number} index - Positive or negative index key. Over- or underflow cannot happen
+     * @param {number} integer - Positive or negative integer
      * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false
-     * @param {Object} [view] - If a view of the array is already defined, pass it here
-     * @returns {Array} - Returns the new TypedArray and the new array length
-     * 
+     * @param {Object} [view] - If a view of the array is already defined, pass it here 
      */
-    static pop(obj, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
-        if (!view) view = new DataView(obj.buffer);
-        const get = Utils.ViewMethods[obj.constructor.name].get;
-        const lastIntIndex = (obj.length-1) * obj.BYTES_PER_ELEMENT;
-        const popped = view[get](lastIntIndex, littleEndian);
-        return [obj.slice(0, -1), popped];
-    }
+    static setAt(obj, index, integer, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
+        
+        if (index < 0) {
+            index = Math.max(obj.length+index, 0);
+        } else if (index >= obj.length) {
+            index = obj.length-1;
+        }
 
+        const type = obj.constructor.name;
+        view = view || new DataView(obj.buffer);
+        const set = Utils.ViewMethods[type].set;
 
-    /**
-     * Unshifts bytes to the beginning of a given array.
-     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
-     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
-     * @returns {Array} - Returns the new TypedArray and the new array length
-     */
-    static unshift(obj, ...args) {
-        const newArray = Mutar.splice(obj, 0, 0, ...args)[0];
-        return [newArray, newArray.length];
-    }
+        view[set](index*obj.BYTES_PER_ELEMENT, integer, littleEndian);
+    } 
 
 
     /**
@@ -613,7 +628,7 @@ class Mutar {
      * 
      */
     static shift(obj, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
-        if (!view) view = new DataView(obj.buffer);
+        view = view || new DataView(obj.buffer);
         const get = Utils.ViewMethods[obj.constructor.name].get;
         const shifted = view[get](0, littleEndian);
 
@@ -718,6 +733,18 @@ class Mutar {
         }
 
         return obj.slice(start, end+1);
+    }
+
+
+    /**
+     * Unshifts bytes to the beginning of a given array.
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
+     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
+     * @returns {Array} - Returns the new TypedArray and the new array length
+     */
+    static unshift(obj, ...args) {
+        const newArray = Mutar.splice(obj, 0, 0, ...args)[0];
+        return [newArray, newArray.length];
     }
 
 
@@ -859,7 +886,7 @@ class Mutar {
         }
     }
 
-    
+
     // ----------------- > instance methods < ----------------- //
 
     /**
@@ -1309,6 +1336,18 @@ class Mutar {
         }
 
         this.array.set(intermediate, offset);
+    }
+
+    
+    /**
+     * 
+     * @param {number} index - Positive or negative index key. Over- or underflow cannot happen
+     * @param {number} integer - Positive or negative integer 
+     * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false
+     */
+    setAt(index, integer, littleEndian=null) {
+        littleEndian = this.#setEndianness(littleEndian);
+        this.constructor.setAt(this.array, index, integer, littleEndian, this.view);
     }
 
 
