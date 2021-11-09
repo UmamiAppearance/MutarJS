@@ -62,25 +62,38 @@ const clone = Mutar.clone(Uint32);                          // -> Uint32Array(1)
 const fresh = new Uint16Array([500, 600]);                  // -> Uint16Array(2)    [500, 600]
 let concat = Mutar.concat(Uint32, clone, fresh);            // -> TypeError
 
-// Seems like the objects need to be converted before they fit together.
-// But this can be forced and done in one step in this case (if you want
-// more control, do the conversion in separate steps before).
+// Seems like the objects needs to be converted before they fit together.
+let freshUint32 = Mutar.convert(fresh, "Uint32");           // -> int32Array(1)     [ 39322100 ]
 
-concat = Mutar.concat(Uint32, clone, fresh, "force");       // -> Uint32Array(3)    [ 400, 400, 39322100 ]
-                                                            //              UI8     [ 144, 1, 0, 0,
-                                                            //                        144, 1, 0, 0,
-                                                            //                        244, 1, 88, 2 ]
-
-// Two Uint16 values fit in one Uint32, but this is not what we want in this case
+// Two Uint16 values fit in one Uint32 (or to be more clear:
+// the underlying buffer has 4 integers [ 244, 1, 88, 2 ],
+// which converts into one Uint32 integer), but this is not
+// what we want in this case
 // Luckily we can convert in another mode -> "intMode"
+freshUint32 = Mutar.convert(fresh, "Uint32", true);         // -> Uint32Array(2)    [500, 600]
 
-concat = Mutar.concat(Uint32, clone, fresh, "force", "intMode");
-                                                            // -> Uint32Array(3)    [ 400, 400, 500, 600 ]
+// Now we can concat.
+concat = Mutar.concat(Uint32, clone, freshUint32);      // -> Uint32Array(4)    [ 400, 400, 500, 600 ]
+
+// If the conversions are that simple as in this case,
+// we can tell the concat function to force conversion
+// on the fly. By literally passing the string "force".
+// Also the "intMode" can be activated by passing the
+// string (by using "intMode", you don't have to pass
+// "force" anymore, as the intention is clear, but it
+// doesn't hurt either).
+concat = Mutar.concat(concat, new Uint16Array([700]), "intMode");
+                                                            // -> Uint32Array(4)    [ 400, 400, 500, 600, 700 ]
+
 
 // Let's take a closer look at the type conversion.
+// The focus is now on the regular mode
 
-// conversion (e.g. BigInt64)
-const bigInt = Mutar.convert(concat, "BigInt");             // -> BigInt64Array(2)  [ 1717986918800n, 2576980378100n ]
+// conversion (e.g. BigInt64) 
+const bigInt = Mutar.convert(concat, "BigInt");             // -> BigInt64Array(2)  [ 1717986918800n, 2576980378100n, 700n ]
+
+// the original concat array has a byte length of 20, which doesn't
+ 
 
 // converting to individual bytes
 const Uint8 = Mutar.convert(bigInt, "Uint8");               // -> Unt8Array(16)     [ 144, 1, 0, 0,

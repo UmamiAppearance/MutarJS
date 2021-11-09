@@ -432,13 +432,13 @@ function objConversionTests() {
 
     nextTest(unit);
 
-    const inputConvertIntModeIntegrityError = `MutarUint32Array(${clone.array.join()}).convert("Uint8", false, true)`;
+    const inputConvertIntModeIntegrityError = `MutarUint32Array(${clone.array.join()}).convert("Uint8", true)`;
     const expectedConvertIntModeIntegrityError = "IntegrityError";
     
     let outputConvertIntModeIntegrityError = "NoError"; 
 
     try {
-        clone.convert("Uint8", false, true);
+        clone.convert("Uint8", true);
     } catch (e) {
         outputConvertIntModeIntegrityError = e.name;
     }
@@ -460,10 +460,10 @@ function objConversionTests() {
 
     nextTest(unit);
 
-    const inputConvertIntModeForce = `MutarUint32Array(${clone.array.join()}).convert("Uint8", false, "force")`;
+    const inputConvertIntModeForce = `MutarUint32Array(${clone.array.join()}).convert("Uint8", "force")`;
     const expectedConvertIntModeForce = "Hor";
     
-    clone.convert("Uint8", false, "force");
+    clone.convert("Uint8", "force");
 
     const outputConvertIntModeForce = Decoder.decode(clone.array); 
 
@@ -484,10 +484,10 @@ function objConversionTests() {
 
     nextTest(unit);
 
-    const inputConvertIntModeUp = `MutarUint8Array(${clone.array.join()}).convert("Uint16", false, true)`;
+    const inputConvertIntModeUp = `MutarUint8Array(${clone.array.join()}).convert("Uint16", true)`;
     const expectedConvertIntModeUp = 297;
 
-    clone.convert("Uint16", false, true);
+    clone.convert("Uint16", true);
 
     const outputConvertIntModeUp = clone.view.getUint16(0, obj.littleEndian) + clone.view.getUint16(2, obj.littleEndian) + clone.view.getUint16(4, obj.littleEndian);
 
@@ -558,9 +558,9 @@ function objConversionTests() {
 
     nextTest(unit);
 
-    const inputConvertIntModeBack = `MutarUint16Array(${clone.array.join()}).convert("Uint8", false, true);`;
+    const inputConvertIntModeBack = `MutarUint16Array(${clone.array.join()}).convert("Uint8", true);`;
 
-    clone.convert("Uint8", false, true);
+    clone.convert("Uint8", true);
 
     const expectedConvertIntModeBack = "Hot";
     const outputConvertIntModeBack = Decoder.decode(clone.array);
@@ -623,8 +623,8 @@ function objConversionTests() {
 
     nextTest(unit);
 
-    const inputCovertBack = `MutarBigUint64Array(${obj.array.join()}).convert(Uint8Array, true)`;
-    obj.convert(Uint8Array, true);
+    const inputCovertBack = `MutarBigUint64Array(${obj.array.join()}).convert(Uint8Array, false, true)`;
+    obj.convert(Uint8Array, false, true);
     const outputConvertBack = Decoder.decode(obj.array);
     
     if (outputConvertBack !== expectedConset) {
@@ -650,7 +650,7 @@ function objConversionTests() {
     for (let i=3; i--;) {
         obj.insert(Math.floor(obj.length * Math.random()), 0);
     }
-    obj.convert(Uint8Array, "purge");
+    obj.convert(Uint8Array, false, "purge");
 
     const outputPurgeTrim = Decoder.decode(obj.array);
     

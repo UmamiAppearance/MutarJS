@@ -251,10 +251,9 @@ class Mutar {
      * each array one must be of the same type but conversion
      * to the type of the first element can be forced, by
      * literally passing the string "force".
-     * TODO: think about intModeForce??
      * 
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
-     * @param  {(buffer[]|string[])} args - At least one Typed array for concatenation must be handed over. Additionally it takes the strings "force", "trim", "purge" and "intMode", which are handed over to the convert function.
+     * @param  {(buffer[]|string[])} args - At least one Typed array for concatenation must be handed over. Additionally it takes the strings "force", "trim", "purge", "intMode" and "intForce", which can be passed to force convert function on the elements
      * @returns {{ buffer: ArrayBufferLike; }} - A concatenated new TypedArray of the input arrays
      */
     static concat(obj, ...args) {
@@ -274,13 +273,23 @@ class Mutar {
         }
 
         // parameters for type conversion
-        const force = argsIncludes("force");
+        let force = argsIncludes("force");
+
         let trim = argsIncludes("trim");
         if (argsIncludes("purge")) {
             trim = "purge";
         }
-        const intMode = argsIncludes("intMode");
+        
+        let intMode = false;
+        if (argsIncludes("intMode")) {
+            intMode = true;
+        }
+        if (argsIncludes("intForce")) {
+            intMode = "force";
+        }
 
+        // if "intMode" is set force will be true if not already
+        if (!force) force = Boolean(intMode);
 
         if (!Mutar.isTypedArray(obj)) {
             throwTypeError(obj);
@@ -304,7 +313,7 @@ class Mutar {
             let next = nextObj; 
             if (nextObj.constructor.name !== type) {
                 if (force) {
-                    next = Mutar.convert(nextObj, type, trim, intMode);
+                    next = Mutar.convert(nextObj, type, intMode, trim);
                 } else {
                     throw new TypeError(`
                         You are trying to concatenate different types of arrays:
@@ -339,7 +348,7 @@ class Mutar {
      * @param {Object} [view] - If a view of the array is already defined, pass it here 
      * @returns {{ buffer: ArrayBufferLike; }} - The converted TypedArray
      */
-    static convert(obj, type, trim=false, intMode=false, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
+    static convert(obj, type, intMode=false, trim=false, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
 
         function num(n, bigInt) {
             return (bigInt) ? BigInt(n) : Number(n);
@@ -944,9 +953,9 @@ class Mutar {
      * @param {(boolean|string)} [trim=false] - If true, padded zeros according to the endianness get trimmed, if set to string "purge" all null bytes get discarded 
      * @param {boolean} [intMode=false] - If true the individual integers keep the same (if they fit)
      */
-    convert(type, trim=false, intMode=false) {
+    convert(type, intMode=false, trim=false) {
         type = this.constructor.typeFromInput(type);
-        this.updateArray = this.constructor.convert(this.array, type, trim, intMode, this.littleEndian, this.view);
+        this.updateArray = this.constructor.convert(this.array, type, intMode, trim, this.littleEndian, this.view);
         return this.array;
     }
 
