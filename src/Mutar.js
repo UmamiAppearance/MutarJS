@@ -257,8 +257,8 @@ class Mutar {
 
         view = view || new DataView(obj.buffer);
         const get = Utils.ViewMethods[obj.constructor.name].get;
-        const offset = index * this.BYTES_PER_ELEMENT;
-        return obj.view[get](offset, littleEndian);
+        const offset = index * obj.BYTES_PER_ELEMENT;
+        return view[get](offset, littleEndian);
     }
 
 
@@ -934,7 +934,7 @@ class Mutar {
      */
     at(index, littleEndian=null) {
         littleEndian = this.#setEndianness(littleEndian);
-        this.constructor.at(this.array, index, littleEndian, this.view);
+        return this.constructor.at(this.array, index, littleEndian, this.view);
     }
 
 
