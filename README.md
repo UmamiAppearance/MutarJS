@@ -85,21 +85,35 @@ concat = Mutar.concat(Uint32, clone, freshUint32);      // -> Uint32Array(4)    
 concat = Mutar.concat(concat, new Uint16Array([700]), "intMode");
                                                             // -> Uint32Array(4)    [ 400, 400, 500, 600, 700 ]
 
-
 // Let's take a closer look at the type conversion.
 // The focus is now on the regular mode
 
 // conversion (e.g. BigInt64) 
 const bigInt = Mutar.convert(concat, "BigInt");             // -> BigInt64Array(2)  [ 1717986918800n, 2576980378100n, 700n ]
 
-// the original concat array has a byte length of 20, which doesn't
- 
+// The original "concat" array has a byte length of 20, BingIntArrays
+// byte lengths must devisable by 8. Mutar is using zero padding to
+// make this fit (zeros are added to the end of the ArrayBuffer or at
+// the beginning for big endian). So when you convert the BigInt back
+// to Uint32 it looks like this.
+let Uint32fromBigInt = Mutar.convert(bigInt, "Uint32");     // -> Uint32Array(5)    [ 400, 400, 500, 600, 700, 0 ]
 
-// converting to individual bytes
-const Uint8 = Mutar.convert(bigInt, "Uint8");               // -> Unt8Array(16)     [ 144, 1, 0, 0,
-                                                            //                        144, 1, 0, 0,
-                                                            //                        244, 1, 0, 0,
-                                                            //                         88, 2, 0, 0 ] 
+// But you can get rid of this zero during conversion, by setting trim to true.
+// More on trimming later.
+Uint32fromBigInt = Mutar.convert(bigInt, "Uint32", false, true);
+                                                            // -> Uint32Array(5)    [ 400, 400, 500, 600, 700 ]
+
+// Let us now remove the repetitive 400 and position 1
+// (the function returns an array with the new array at
+// position 0 and the detached value an position 1)
+let cleanedUint32, detached;
+[cleanedUint32, detached] = Mutar.detach(Uint32fromBigInt, 1);
+                                                            // -> Uint32Array(4)    [ 400, 500, 600, 700 ]
+
+// We can also insert
+let insertedUint32, newlen;
+[insertedUint32, newlen] = Mutar.insert(cleanedUint32, )
+
 
 
 // trimming zero padding

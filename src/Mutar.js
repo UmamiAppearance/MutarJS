@@ -603,7 +603,7 @@ class Mutar {
 
 
     /**
-     * Sets value at the array at the given index.
+     * Changes one value from the array at the given index.
      * Endian aware.
      *  
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
