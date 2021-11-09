@@ -68,7 +68,7 @@ let freshUint32 = Mutar.convert(fresh, "Uint32");           // -> int32Array(1) 
 // Two Uint16 values fit in one Uint32 (or to be more clear:
 // the underlying buffer has 4 integers [ 244, 1, 88, 2 ],
 // which converts into one Uint32 integer), but this is not
-// what we want in this case
+// what we want in this case.
 // Luckily we can convert in another mode -> "intMode"
 freshUint32 = Mutar.convert(fresh, "Uint32", true);         // -> Uint32Array(2)    [500, 600]
 
@@ -140,9 +140,9 @@ let unshiftedUint32, newLen;
 let splicedUint32, slicedArr;
 [splicedUint32, slicedArr] = Mutar.splice(unshiftedUint32, 2, 3, 450, 500, 550, 600, 650);
                                                             // -> Uint32Array(9)    [ 300, 400, 450,
-                                                                                      500, 550, 600,
-                                                                                      650, 700, 800 ],
-                                                                                    [ 500, 550, 600 ]
+                                                            //                        500, 550, 600,
+                                                            //                        650, 700, 800 ],
+                                                            //                      [ 500, 550, 600 ]
 
 
 
