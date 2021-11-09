@@ -234,7 +234,33 @@ class Mutar {
     }
 
 
-    // -------------------- > main tools < -------------------- // 
+    // -------------------- > main tools < -------------------- //
+
+    /**
+     * Endian aware TypedArray.at
+     * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
+     * @param {number} index - Positive or negative index key.
+     * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false 
+     */
+     static at(obj, index, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
+        index = Number(index);
+        if (isNaN(index)) {
+            index = 0;
+        } else if (index < 0) {
+            index = obj.length + index;
+            if (index < 0) {
+                return undefined;
+            }
+        } else if (index >= obj.length) {
+            return undefined;
+        }
+
+        view = view || new DataView(obj.buffer);
+        const get = Utils.ViewMethods[obj.constructor.name].get;
+        const offset = index * this.BYTES_PER_ELEMENT;
+        return obj.view[get](offset, littleEndian);
+    }
+
 
     /**
      * Make a copy of the given array
@@ -902,26 +928,13 @@ class Mutar {
     // ----------------- > instance methods < ----------------- //
 
     /**
-     * Endian aware TypedArray.at
-     * @param {number} start - Positive or negative index key.
+     * Calls Mutar.at
+     * @param {number} index - Positive or negative index key.
      * @param {boolean} [littleEndian=this.littleEndian] - A boolean that sets little endian to true/false 
      */
     at(index, littleEndian=null) {
         littleEndian = this.#setEndianness(littleEndian);
-        index = Number(index);
-        if (isNaN(index)) {
-            index = 0;
-        } else if (index < 0) {
-            index = this.length + index;
-            if (index < 0) {
-                return undefined;
-            }
-        } else if (index >= this.length) {
-            return undefined;
-        }
-        const get = Utils.ViewMethods[this.type].get;
-        const offset = index * this.BYTES_PER_ELEMENT;
-        return this.view[get](offset, littleEndian);
+        this.constructor.at(this.array, index, littleEndian, this.view);
     }
 
 

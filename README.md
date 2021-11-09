@@ -9,7 +9,7 @@ In reality _TypedArrays_ are not mutable in terms of growing and shrinking. To e
 **Mutar** objects are designed to be aware of endianness. If not specified, the the endianness of the system is used, which is most likely little endian. Despite this fact, sometimes data (e.g. network related) differ in its endianness. It is possible to store them in a **Mutar** object, interact with it but keep the given byte order. (Values which are added or got are converted to the according endianness). 
 
 ## Toolkit
-If you want to work with an existing TypedArray, you can use **Mutar** to analyse and modify it. Let's for example take a Uint32Array for the integer **400**.
+If you want to work with an existing TypedArray, you can use **Mutar** to analyse and modify it. Let's for example take a Uint32Array which holds the integer **400**. A little remark: If you plan to do a lot of manipulation to a single array, you should strongly consider to use the [Mutar object](#Object). 
 
 ```js
 const Uint32 = new Uint32Array([400]);
@@ -73,7 +73,7 @@ let freshUint32 = Mutar.convert(fresh, "Uint32");           // -> int32Array(1) 
 freshUint32 = Mutar.convert(fresh, "Uint32", true);         // -> Uint32Array(2)    [500, 600]
 
 // Now we can concat.
-concat = Mutar.concat(Uint32, clone, freshUint32);      // -> Uint32Array(4)    [ 400, 400, 500, 600 ]
+concat = Mutar.concat(Uint32, clone, freshUint32);          // -> Uint32Array(4)    [ 400, 400, 500, 600 ]
 
 // If the conversions are that simple as in this case,
 // we can tell the concat function to force conversion
@@ -98,21 +98,51 @@ const bigInt = Mutar.convert(concat, "BigInt");             // -> BigInt64Array(
 // to Uint32 it looks like this.
 let Uint32fromBigInt = Mutar.convert(bigInt, "Uint32");     // -> Uint32Array(5)    [ 400, 400, 500, 600, 700, 0 ]
 
-// But you can get rid of this zero during conversion, by setting trim to true.
-// More on trimming later.
+// To remove this padded zero we can use the "trim" function
+Uint32fromBigInt = Mutar.trim(bigInt);                      // -> Uint32Array(5)    [ 400, 400, 500, 600, 700 ]
+
+// We can get rid of this zero also during conversion by setting
+// the third param "trim" to true.
 Uint32fromBigInt = Mutar.convert(bigInt, "Uint32", false, true);
                                                             // -> Uint32Array(5)    [ 400, 400, 500, 600, 700 ]
 
 // Let us now remove the repetitive 400 and position 1
-// (the function returns an array with the new array at
-// position 0 and the detached value an position 1)
+// (the function returns an array with the new typed array
+// at position 0 and the detached value an position 1)
 let cleanedUint32, detached;
 [cleanedUint32, detached] = Mutar.detach(Uint32fromBigInt, 1);
-                                                            // -> Uint32Array(4)    [ 400, 500, 600, 700 ]
+                                                            // -> Uint32Array(4)    [ 400, 500, 600, 700 ], 400
 
 // We can also insert
 let insertedUint32, newlen;
-[insertedUint32, newlen] = Mutar.insert(cleanedUint32, )
+[insertedUint32, newlen] = Mutar.insert(cleanedUint32, 2, 550);
+                                                            // -> Uint32Array(5)    [ 400, 500, 550, 600, 700 ], 5
+
+// Pop
+let poppedUint32, popped;
+[poppedUint32, popped] = Mutar.pop(insertedUint32);         // -> Uint32Array(4)    [ 400, 500, 550, 600 ], 700
+
+// Push
+let pushedUint32;
+[pushedUint32, newLen] = Mutar.push(poppedUint32, 700, 800);
+                                                            // -> Uint32Array(6)    [ 400, 500, 550, 600, 700, 800 ]
+
+// Shift
+let shiftedUint32, shifted;
+[shiftedUint32, shifted] = Mutar.shift(pushedUint32);       // -> Uint32Array(5)    [ 500, 550, 600, 700, 800 ], 400
+
+// Unshift
+let unshiftedUint32, newLen;
+[unshiftedUint32, shifted] = Mutar.unshift(shiftedUint32, 300, 400);       
+                                                            // -> Uint32Array(7)    [ 300, 400, 500, 550, 600, 700, 800 ], 7
+
+// Splice
+let splicedUint32, slicedArr;
+[splicedUint32, slicedArr] = Mutar.splice(unshiftedUint32, 2, 3, 450, 500, 550, 600, 650);
+                                                            // -> Uint32Array(9)    [ 300, 400, 450,
+                                                                                      500, 550, 600,
+                                                                                      650, 700, 800 ],
+                                                                                    [ 500, 550, 600 ]
 
 
 
