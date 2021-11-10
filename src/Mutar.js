@@ -237,6 +237,15 @@ class Mutar {
     // -------------------- > main tools < -------------------- //
 
     /**
+     * Getter to determine the systems endianness
+     * @returns {boolean}
+     */
+    static get SYS_LITTLE_ENDIAN() {
+        return SYS_LITTLE_ENDIAN;
+    }
+
+
+    /**
      * Endian aware TypedArray.at
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray
      * @param {number} index - Positive or negative index key.
@@ -541,7 +550,7 @@ class Mutar {
 
 
     /**
-     * Switches between little and big endian
+     * Switches a single integer between little and big endian
      * @param {number} - A regular integer 
      * @param {(string|function)} type - Must be a TypedArray constructor, the name of the constructor as string or a shortcut, as defined at "Utils"
      * @returns {number} - The flipped integer
@@ -829,6 +838,7 @@ class Mutar {
 
     /**
      * Getter to determine the systems endianness
+     * @returns {boolean}
      */
     get SYS_LITTLE_ENDIAN() {
         return SYS_LITTLE_ENDIAN;

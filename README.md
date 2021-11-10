@@ -9,7 +9,7 @@ In reality _TypedArrays_ are not mutable in terms of growing and shrinking. To e
 **Mutar** objects are designed to be aware of endianness. If not specified, the the endianness of the system is used, which is most likely little endian. Despite this fact, sometimes data (e.g. network related) differ in its endianness. It is possible to store them in a **Mutar** object, interact with it but keep the given byte order. (Values which are added or got are converted to the according endianness). 
 
 ## Toolkit
-If you want to work with an existing TypedArray, you can use **Mutar** to analyse and modify it. Let's for example take a Uint32Array which holds the integer **400**. A little remark: If you plan to do a lot of manipulation to a single array, you should strongly consider to use the [Mutar object](#Object). 
+If you want to work with an existing TypedArray, you can use **Mutar** to analyse and modify it. Let's for example take a Uint32Array which holds the integer **400**. A little remark: If you plan to do a lot of manipulation to a single array, you should strongly consider to use the [Mutar Object](#Object). 
 
 ```js
 const Uint32 = new Uint32Array([400]);
@@ -44,9 +44,12 @@ Mutar.isTypeOf(Uint32, "Int8");                 // -> false
 Mutar.isTypeOf(regularArray, Uint32Array);      // -> false
 ```
 
-Let's now take a look at the fun part: the modification.
+Let's now take a look at the fun part: the _modification_.
 
 ### Modification
+One major focus of Mutar is to be aware of endianness. For simplicity, there is only a small section at the beginning of this chapter, that is going into this feature. The other here introduced functions are not using the opportunity to manipulate endianness, but that doesn't mean that it is not there. Every function, that manipulates the bytes has the possibility to set the integers in either little or big endian. If nothing is specified, the endianness of the system is getting used. 
+
+
 ```js
 // Again we are taking the Uint32Array of the Integer 400
 // The individual bytes for this number are:
@@ -58,9 +61,42 @@ const Uint32 = new Uint32Array([400]);                      // -> Uint32Array(1)
 // (changes on the clone will not affect the original)
 const clone = Mutar.clone(Uint32);                          // -> Uint32Array(1)    [ 400 ]
 
+// Change endianness
+Mutar.flipEndianness(clone);                                // -> Uint32Array(1)    [ 2415984640 ]
+
+// Determine the endianness of the System
+const littleEndian = Mutar.SYS_LITTLE_ENDIAN;               // -> true (most likely)
+const bigEndian = !littleEndian;                            // -> false 
+
+// Get the integer at index 0 (little or big endian is getting passed here,
+// which is only done for universal correctness. Just pass true for little
+// and false for big endian)
+Mutar.at(Uint32, 0, littleEndian);                          // -> 400
+Mutar.at(clone, 0, littleEndian);                           // -> 2415984640
+Mutar.at(clone, 0, bigEndian);                              // -> 400
+
+// Set single integers (Uint32 has the systems endianness, so no need to specify)
+Mutar.setAt(Uint32, 0, 500);
+Mutar.setAt(clone, 0, 500, bigEndian);
+
+// Now let's set back the endianness of the clone and test if it is equal to
+// the original Uint32
+Uint32[0] === clone[0]                                      // -> false (500 === 4093706240)
+Mutar.flipEndianness(clone);                                // -> Uint32Array(1)    [ 500 ]
+Uint32[0] === clone[0]                                      // -> true
+
+// As already mentioned, you have the ability to specify the endianness
+// for almost every function. From now on it is no longer used, everything
+// is done with the systems default endianness. Before we continue, let us 
+// set back clone and original to 400.
+Uint32[0] = 400;
+clone[0] = 400;
+
+
+
 // Concatenation of arrays (let's join the original, the clone and a fresh array)
 const fresh = new Uint16Array([500, 600]);                  // -> Uint16Array(2)    [500, 600]
-let concat = Mutar.concat(Uint32, clone, fresh);            // -> TypeError
+Mutar.concat(Uint32, clone, fresh);                         // -> TypeError
 
 // Seems like the objects needs to be converted before they fit together.
 let freshUint32 = Mutar.convert(fresh, "Uint32");           // -> int32Array(1)     [ 39322100 ]
@@ -73,7 +109,7 @@ let freshUint32 = Mutar.convert(fresh, "Uint32");           // -> int32Array(1) 
 freshUint32 = Mutar.convert(fresh, "Uint32", true);         // -> Uint32Array(2)    [500, 600]
 
 // Now we can concat.
-concat = Mutar.concat(Uint32, clone, freshUint32);          // -> Uint32Array(4)    [ 400, 400, 500, 600 ]
+let concat = Mutar.concat(Uint32, clone, freshUint32);       // -> Uint32Array(4)    [ 400, 400, 500, 600 ]
 
 // If the conversions are that simple as in this case,
 // we can tell the concat function to force conversion
@@ -99,10 +135,10 @@ const bigInt = Mutar.convert(concat, "BigInt");             // -> BigInt64Array(
 let Uint32fromBigInt = Mutar.convert(bigInt, "Uint32");     // -> Uint32Array(5)    [ 400, 400, 500, 600, 700, 0 ]
 
 // To remove this padded zero we can use the "trim" function
-Uint32fromBigInt = Mutar.trim(bigInt);                      // -> Uint32Array(5)    [ 400, 400, 500, 600, 700 ]
+Uint32fromBigInt = Mutar.trim(Uint32fromBigInt);            // -> Uint32Array(5)    [ 400, 400, 500, 600, 700 ]
 
 // We can get rid of this zero also during conversion by setting
-// the third param "trim" to true.
+// the third param "trim" to be true.
 Uint32fromBigInt = Mutar.convert(bigInt, "Uint32", false, true);
                                                             // -> Uint32Array(5)    [ 400, 400, 500, 600, 700 ]
 
@@ -125,7 +161,7 @@ let poppedUint32, popped;
 // Push
 let pushedUint32;
 [pushedUint32, newLen] = Mutar.push(poppedUint32, 700, 800);
-                                                            // -> Uint32Array(6)    [ 400, 500, 550, 600, 700, 800 ]
+                                                            // -> Uint32Array(6)    [ 400, 500, 550, 600, 700, 800 ], 6
 
 // Shift
 let shiftedUint32, shifted;
@@ -144,27 +180,9 @@ let splicedUint32, slicedArr;
                                                             //                        650, 700, 800 ],
                                                             //                      [ 500, 550, 600 ]
 
-
-
-// trimming zero padding
-// the two zeros at byte index 2 and 3 are know part
-// a whole stream. The null bytes at the end of the array
-// can still get trimmed. (You can get rid of them by
-// setting the second argument to true, if you do so
-// all zeros are getting purged. Be careful with that
-// option.)
-const trimmed = Mutar.trim(concat8);                // -> Uint8Array(6)     [ 144, 1, 0, 0, 244, 1 ]
-
-// By going back to Uint32 the missing padding is added "again"
-Mutar.convert(trimmed, Uint32Array)                 // -> Uint32Array(2)    [ 400, 500 ] | UI8 [ 144, 1, 0, 0, 244, 1, 0, 0]
-
-
-
-
-
-// change a value of the array
-Mutar.setAt(concat, 1, 500);                        // -> Uint32Array(2)    [ 400, 500 ]
-
-
+// Create a Mutar object from a regular typed array
+const mutarObj = Mutar.from(splicedUint32);
 
 ```
+
+## Object
