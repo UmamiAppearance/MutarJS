@@ -157,7 +157,7 @@ class Mutar {
             if (type) {
                 type = Mutar.typeFromInput(type);
                 if (type !== input.constructor.name) {
-                    input = this.constructor.convert(input, type, true, littleEndian);
+                    input = this.constructor.convert(input, type, "force", littleEndian);
                 }
             }
             if (adjustEndianness) {
