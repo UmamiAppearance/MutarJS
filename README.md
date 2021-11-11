@@ -29,7 +29,7 @@ Mutar.isTypedArray(regularArray);               // -> false
 Mutar.getType(Uint32);                          // -> "Uint32Array"
 
 
-// Test if array is of type xy //
+// Test if array is of type foo //
 
 // test for Uint32Array
 Mutar.isTypeOf(Uint32, "Uint32Array");          // -> true
@@ -186,3 +186,37 @@ const mutarObj = Mutar.from(splicedUint32);
 ```
 
 ## Object
+Even though the object has far more options, than the toolkit provides, there is much less to explain. First of all, the with the toolkit introduced functions above are all available as object methods. The difference is, that the object holds an an array which gets modified, it is therefore not necessary to always store the output of the method. But let us first take a look how the object structure looks like.
+
+```js
+const mutarObj = new Mutar([300, 400, 450, 500, 550, 600, 650, 700, 800], Uint32Array);
+```
+
+```
+Mutar {
+    littleEndian: true,
+    array: Uint32Array(9) [
+        300, 400, 450,
+        500, 550, 600,
+        650, 700, 800
+    ],
+    view: DataView {
+        byteLength: 36,
+        byteOffset: 0,
+        buffer: ArrayBuffer {
+            [Uint8Contents]: 
+                < 2c 01 00 00 
+                  90 01 00 00
+                  c2 01 00 00
+                  f4 01 00 00
+                  26 02 00 00
+                  58 02 00 00
+                  8a 02 00 00
+                  bc 02 00 00
+                  20 03 00 00 >,
+            byteLength: 36
+        }
+    }
+}
+
+```
