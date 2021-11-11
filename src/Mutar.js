@@ -161,7 +161,7 @@ class Mutar {
                 }
             }
             if (adjustEndianness) {
-                this.constructor.flipEndianness(input, true);
+                input = this.constructor.flipEndianness(input, true);
             }
             this.updateArray = input;
 

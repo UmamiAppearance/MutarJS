@@ -197,10 +197,34 @@ There are some opportunities for creating a **Mutar** object. One is, as shown r
 const mutarObj = new Mutar([300, 400, 450, 500, 550, 600, 650, 700, 800], Uint32Array);
 
 // Passing a typed array (the type must not be specified)
-const mutarObjFromTA = new Mutar(new Uint32Array([300, 400));
+const mutarObjFromTA = new Mutar(new Uint32Array([300, 400]));
 
-// But type can be specified
+// But type can be specified. In this case only the values matter, no longer the type of array
+const mutarObjTAwithType = new Mutar(new Uint32Array([300, 400]), Uint16Array);
+
+// Input can even be a string (which gets converted to a Uint8Array)
+const mutarObjFromStr = new Mutar("Hello World!");
+
+// Endianness matters (but is always the systems default if not specified)
+// The third parameter of the constructor sets the littleEndian of the object
+// to true/false.
+// Notice, that both objects look the same, but produce completely different
+// results if you use the Mutar methods. The following examples are telling 
+// Mutar: treat this is little, treat this as big endian. 
+const mutarObjLE = new Mutar(new Uint32Array([300, 400]), null, true);
+const mutarObjBE = new Mutar(new Uint32Array([300, 400]), null, false);
+
+// If the values shall flip you can set another parameter, called "adjustEndianness"
+const mutarObjBEadjust = new Mutar(new Uint32Array([300, 400]), null, false, true);
+                                          // [738263040, 2415984640] 
 ```
+
+Mutar objects have a pretty simple structure. The constructor returns:
+ * littleEndian
+ * array
+ * view
+
+You can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
 
 ### Structure
 ```
@@ -232,4 +256,5 @@ Mutar {
 
 ```
 
-Even though the object has far more options, than the toolkit provides, there is much less to explain. First of all, the with the toolkit introduced functions above are all available as object methods. The difference is, that the object holds an an array which gets modified, it is therefore not necessary to always store the output of the method.
+### Methods
+Even though the object has far more methods, than the toolkit provides, there is much less to explain. First of all the introduced functions above are all available as object methods. The difference is, that the object holds an the array which gets modified, it is therefore not necessary to always store the output of the method. And also you do not have to hand over a typed array. 
