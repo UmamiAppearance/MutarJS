@@ -3,6 +3,7 @@
 
 **Mutar** is a toolkit to interact with typed arrays and modify them (or let's say a kit to emulate modification) and a constructor for a special object. It is a very convenient way to handle binary data. If constructed, the array behaves pretty much as a regular array. You can concatenate, pop, shift, unshift... On top of that the type can be changed from - let's say - Uint8 to Float64. 
 
+#### Mutability
 In reality _TypedArrays_ are not mutable in terms of growing and shrinking. To emulate mutability a new array with the desired properties is created. This comes to a price of course. Every time the array length "changes", a new TypedArray is allocated in memory. Keep that in mind when using it, if this is critical to you.
 
 #### Endianness
@@ -254,5 +255,5 @@ Mutar {
 ```
 
 ### Methods
-You can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
-Even though the object has far more methods, than the toolkit provides, there is much less to explain. First of all the introduced functions above are all available as object methods. The difference is, that the object holds an the array which gets modified, it is therefore not necessary to always store the output of the method. And also you do not have to hand over a typed array. 
+You can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of a typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
+Even though the object has far more methods than the toolkit provides, there is much less to explain. First of all the introduced functions above are all available as object methods. The difference is, that the object holds the array which gets modified, it is therefore not necessary to always store the output of the method. And also you do not have to hand over a typed array (which will be done for you and will always be ``mutarObj.array``).
