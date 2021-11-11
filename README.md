@@ -218,14 +218,12 @@ const mutarObjBEadjust = new Mutar(new Uint32Array([300, 400]), null, false, tru
                                           // [738263040, 2415984640] 
 ```
 
+### Structure
 Mutar objects have a pretty simple structure. The constructor returns:
  * ``littleEndian``
  * ``array``
  * ``view``
 
-You can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
-
-### Structure
 ```
 Mutar {
     littleEndian: true,
@@ -256,4 +254,5 @@ Mutar {
 ```
 
 ### Methods
+You can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
 Even though the object has far more methods, than the toolkit provides, there is much less to explain. First of all the introduced functions above are all available as object methods. The difference is, that the object holds an the array which gets modified, it is therefore not necessary to always store the output of the method. And also you do not have to hand over a typed array. 
