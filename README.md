@@ -191,9 +191,8 @@ There are some opportunities for creating a **Mutar** object. One is, as shown r
 
 ### Creating
 ```js
-// Passing a regular array with plus the typed array function 
-// ``Uint32Array``or string ``"Uint32Array"`` of shortcut string
-// ``"Uint32"``.
+// Passing a regular array, plus the typed array function Uint32Array or string "Uint32Array"``
+// or shortcut string "Uint32".
 const mutarObj = new Mutar([300, 400, 450, 500, 550, 600, 650, 700, 800], Uint32Array);
 
 // Passing a typed array (the type must not be specified)
