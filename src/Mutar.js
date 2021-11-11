@@ -151,11 +151,17 @@ class Mutar {
             input = new TextEncoder().encode(input);
         }
         
-        // If the input is a TypedArray, all information can
-        // get read from that object.
+        // If the input is a TypedArray, all information will
+        // get read from that object, if no type is specified.
         if (this.constructor.isTypedArray(input)) {
+            if (type) {
+                type = Mutar.typeFromInput(type);
+                if (type !== input.constructor.name) {
+                    input = this.constructor.convert(input, type, true, littleEndian);
+                }
+            }
             if (adjustEndianness) {
-                this.constructor.flipEndianness(input);
+                this.constructor.flipEndianness(input, true);
             }
             this.updateArray = input;
 

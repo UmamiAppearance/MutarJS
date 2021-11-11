@@ -186,12 +186,21 @@ const mutarObj = Mutar.from(splicedUint32);
 ```
 
 ## Object
-Even though the object has far more options, than the toolkit provides, there is much less to explain. First of all, the with the toolkit introduced functions above are all available as object methods. The difference is, that the object holds an an array which gets modified, it is therefore not necessary to always store the output of the method. But let us first take a look how the object structure looks like.
 
+There are some opportunities for creating a **Mutar** object. One is, as shown right before, by calling the ``Mutar.from`` function. The default way looks like follows: 
+
+### Creating
 ```js
+// Passing a regular array with plus the typed array function 
+// ``Uint32Array``or string ``"Uint32Array"`` of shortcut string
+// ``"Uint32"``.
 const mutarObj = new Mutar([300, 400, 450, 500, 550, 600, 650, 700, 800], Uint32Array);
+
+// Passing a typed array (the type must not be specified)
+const mutarObj2 = new Mutar(new Uint32Array([300, 400));
 ```
 
+### Structure
 ```
 Mutar {
     littleEndian: true,
@@ -220,3 +229,5 @@ Mutar {
 }
 
 ```
+
+Even though the object has far more options, than the toolkit provides, there is much less to explain. First of all, the with the toolkit introduced functions above are all available as object methods. The difference is, that the object holds an an array which gets modified, it is therefore not necessary to always store the output of the method.
