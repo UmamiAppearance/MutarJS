@@ -205,7 +205,7 @@ const mutarObjTAwithType = new Mutar(new Uint32Array([300, 400]), Uint16Array);
 const mutarObjFromStr = new Mutar("Hello World!");
 
 // Endianness matters (but is always the systems default if not specified)
-// The third parameter of the constructor sets the littleEndian of the object
+// The third parameter of the constructor sets littleEndian of the object
 // to true/false.
 // Notice, that both objects look the same, but produce completely different
 // results if you use the Mutar methods. The following examples are telling 
@@ -219,9 +219,9 @@ const mutarObjBEadjust = new Mutar(new Uint32Array([300, 400]), null, false, tru
 ```
 
 Mutar objects have a pretty simple structure. The constructor returns:
- * littleEndian
- * array
- * view
+ * ``littleEndian``
+ * ``array``
+ * ``view``
 
 You can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
 
