@@ -129,7 +129,7 @@ concat = Mutar.concat(concat, new Uint16Array([700]), "intMode");
 const bigInt = Mutar.convert(concat, "BigInt");             // -> BigInt64Array(2)  [ 1717986918800n, 2576980378100n, 700n ]
 
 // The original "concat" array has a byte length of 20, BingIntArrays
-// byte lengths must devisable by 8. Mutar is using zero padding to
+// byte lengths must be devisable by 8. Mutar is using zero padding to
 // make this fit (zeros are added to the end of the ArrayBuffer or at
 // the beginning for big endian). So when you convert the BigInt back
 // to Uint32 it looks like this.
@@ -256,4 +256,4 @@ Mutar {
 
 ### Methods
 You can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of a typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
-Even though the object has far more methods than the toolkit provides, there is much less to explain. First of all the introduced functions above are all available as object methods. The difference is, that the object holds the array which gets modified, it is therefore not necessary to always store the output of the method. And also you do not have to hand over a typed array (which will be done for you and will always be ``mutarObj.array``).
+Even though the object has far more methods than the toolkit provides, there is much less to explain. The difference is, that the object holds the array which gets modified, it is therefore not necessary to always store the output of the method. And also you do not have to hand over a typed array (which will be done for you and will always be ``mutarObj.array``).
