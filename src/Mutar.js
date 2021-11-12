@@ -257,7 +257,7 @@ class Mutar {
      * @param {number} index - Positive or negative index key.
      * @param {boolean} [littleEndian=SYS_LITTLE_ENDIAN] - A boolean that sets little endian to true/false 
      */
-     static at(obj, index, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
+    static at(obj, index, littleEndian=SYS_LITTLE_ENDIAN, view=null) {
         index = Number(index);
         if (isNaN(index)) {
             index = 0;
