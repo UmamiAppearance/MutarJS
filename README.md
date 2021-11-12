@@ -465,3 +465,6 @@ _methods:_
 * ``obj.unshift``
 * ``obj.updateArray``
 * ``obj.values``
+
+## License
+This work is licensed under [GPL-3.0](https://opensource.org/licenses/GPL-3.0).
