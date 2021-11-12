@@ -1,0 +1,4 @@
+.vscode
+Mutar.code-workspace
+dist/*
+!dist/Mutar.cjs.js

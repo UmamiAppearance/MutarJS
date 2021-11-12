@@ -118,7 +118,7 @@ const Utils = {
             set: "setBigUint64"
         }
     }
-}
+};
 
 const SYS_LITTLE_ENDIAN = Utils.getSysEndianness();
 
@@ -544,7 +544,7 @@ class Mutar {
             obj = obj.slice();
         }
 
-        const bytesPerElem = obj.constructor.BYTES_PER_ELEMENT 
+        const bytesPerElem = obj.constructor.BYTES_PER_ELEMENT; 
         if (bytesPerElem > 1) {
             const singleBytesView = new Uint8Array(obj.buffer);
             for (let i=0; i<obj.byteLength; i+=bytesPerElem) {
@@ -564,7 +564,7 @@ class Mutar {
     static flipEndiannessInt(int, type) {
 
         type = Mutar.typeFromInput(type);
-        const array = new Utils.ArrayTypes[type](1)
+        const array = new Utils.ArrayTypes[type](1);
         array[0] = int;
         Mutar.flipEndianness(array);
         return array[0];
@@ -1079,7 +1079,7 @@ class Mutar {
     extractArrayClone(toSysEndianness=false) {
         const clone = this.array.slice();
         if (toSysEndianness && this.littleEndian !== this.SYS_LITTLE_ENDIAN) {
-            this.constructor.flipEndianness(clone)
+            this.constructor.flipEndianness(clone);
         }
         return clone;
     }
@@ -1463,7 +1463,7 @@ class Mutar {
             items.push(this.littleEndian);
         }
         let spliced;
-        [this.updateArray, spliced] = this.constructor.splice(this.array, start, deleteCount, ...items)
+        [this.updateArray, spliced] = this.constructor.splice(this.array, start, deleteCount, ...items);
         return spliced;
     }
 
@@ -1540,4 +1540,4 @@ class Mutar {
     }
 }
 
-export default Mutar;
+export { Mutar as default };

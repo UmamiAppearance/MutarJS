@@ -37,6 +37,10 @@ Either way you have two builds available ([esm](https://developer.mozilla.org/en
 * ``Mutar.iife.min.js``
 
 
+## Importing
+
+
+
 ## Toolkit
 If you want to work with an existing TypedArray, you can use **Mutar** to analyse and modify it. Let's for example take a Uint32Array which holds the integer **400**. A little remark: If you plan to do a lot of manipulation to a single array, you should strongly consider to use the [Mutar Object](#Object).
 
@@ -283,29 +287,30 @@ Mutar {
 ```
 
 ### Methods
-You can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of a typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
-Even though the object has far more methods than the toolkit provides, there is much less to explain. The difference is, that the object holds the array which gets modified, it is therefore not necessary to always store the output of the method. And also you do not have to hand over a typed array (which will be done for you and will always be ``mutarObj.array``). Let's exemplary take a look at some methods.
+We can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of a typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
+Even though the object has far more methods than the toolkit provides, there is much less to explain. The difference is, that the object holds the array which gets modified, it is therefore not necessary to always store the output of the method. And also we do not have to hand over a typed array (which will be done for you and will always be ``mutarObj.array``). Let's exemplary take a look at some methods.
 
 ```js
-// Let us set again the array, with deliberately setting the endianness to true.
+// Let us set again the array, with deliberately setting the endianness to be true.
 // (Which is redundant, as it is set to the systems endianness by default, but let
 // us keep this examples universally correct).
 const mutarObj = new Mutar([300, 400, 450, 500, 550, 600, 650, 700, 800], Uint32Array, true); 
 
-// pop as method
+// Pop as method
 mutarObj.pop();                                     // -> 800
 
-// push as method
+// Push as method
 mutarObj.push(750);                                 // -> 9
 
-// concat also behaves like the regular array method 
+// Concat also behaves like the regular array method 
 mutarObj.concat(new Uint32Array([900, 1000]));      // -> returns a mutar object with the array [... 700, 800, 1000]
 
-// you can btw also concat and set, which saves the step of storing the concatenated return object
+// You can btw also concat and set/save the concatenated array at mutarObj.array, which
+// saves the step of storing the concatenated return object.
 mutarObj.conset(new Uint32Array([900, 1000]));
 
 // And this list goes on, just apply your knowledge about regular arrays
-//and typed arrays. If you are not interested in manipulating the endianness,
+// and typed arrays. If you are not interested in manipulating the endianness,
 // that is all you need to know.
 
 // Let us know look at the particularities.
