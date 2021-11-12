@@ -259,7 +259,10 @@ You can interact directly with those children, but that is not very handy. There
 Even though the object has far more methods than the toolkit provides, there is much less to explain. The difference is, that the object holds the array which gets modified, it is therefore not necessary to always store the output of the method. And also you do not have to hand over a typed array (which will be done for you and will always be ``mutarObj.array``). Let's exemplary take a look at some methods.
 
 ```js
-const mutarObj = new Mutar([300, 400, 450, 500, 550, 600, 650, 700, 800], Uint32Array);
+// Let us set again the array, with deliberately setting the endianness to true.
+// (Which is redundant, as it is set to the systems endianness by default, but let
+// us keep this examples universally correct).
+const mutarObj = new Mutar([300, 400, 450, 500, 550, 600, 650, 700, 800], Uint32Array, true); 
 
 // pop as method
 mutarObj.pop();                                     // -> 800
@@ -273,7 +276,82 @@ mutarObj.concat(new Uint32Array([900, 1000]));      // -> returns a mutar object
 // you can btw also concat and set, which saves the step of storing the concatenated return object
 mutarObj.conset(new Uint32Array([900, 1000]));
 
-// and this list goes on, just apply your knowledge about regular arrays and typed arrays
-// let us know look at the particularities 
+// And this list goes on, just apply your knowledge about regular arrays
+//and typed arrays. If you are not interested in manipulating the endianness,
+// that is all you need to know.
+
+// Let us know look at the particularities.
+// As already displayed, the object has the property littleEndian. That
+// means, that every function call is done with this setting, if it is
+// not overwritten, which totally is possible. See for example:
+
+mutarObj.shift(false);                              // -> 738263040
+
+// The value 300 was converted, as we explicitly asked for it. 
+// The last object of almost every function takes this endianness
+// bool. As shift usually takes no arguments, there is only this 
+// parameter left. But lets us look at an example that takes many 
+// arguments. The littleEndian bool is always at the very end.
+
+mutarObj.splice(-2, 2, 800, 850, false);            // -> Uint32Array(2) [ 900, 1000 ]
+
+// The last argument has set the endianness to false, which we can see
+// if we look at the array
+mutarObj.toString();                                // -> '400,450,500,550,600,650,700,750,537067520,1375928320'
+
+// We can also tell the ``toString`` method to flip the endianness
+
+mutarObj.toString(false);                           // -> '...3154247680,3993108480,800,850'
+
+// At the very end we can now see our two values we added with the
+// splice call as BE flipped back again. But lets us know clean up
+// this mixed mess. First we call the detach method to remove the
+// last but one value and tell ist to use BE.
+mutarObj.detach(-2, false);                         // -> 800
+
+// Now the pop method for the removal of the last value without 
+// specification
+mutarObj.pop();                                     // -> 1375928320
+
+// Let us now flip the endianness all together and look what happens
+mutarObj.flipEndianness();                          // -> Uint32Array(8) [ 2415984640, ..., 3993108480 ]
+
+// The values have all flipped as well as the littleEndian value.
+// The result is, that if we don't pass any endian bool manually.
+// the methods now work with be. If we call the "at" function, we
+// see the actual value, translated to the endianness of our system.
+
+mutarObj.at(0);                                     // -> 400
+mutarObj.array.at(0);                               // -> 2415984640
+
+// The big advantage is, that we now don't have to bother about this.
+// Algorithms can use the systems endianness Mutar translates it.
+// Lets create a little function and pass it to the map function
+// to demonstrate this.
+
+const demoFN = (val) => {
+    const newVal = val*2;
+    console.log(newVal);
+    return newVal;
+} 
+
+mutarObj.map(demoFN);                               /* ->
+800
+900
+1000
+1100
+1200
+1300
+1400
+1500
+Uint32Array(8) [
+   537067520, 2214789120,
+  3892510720, 1275330560,
+  2953052160,  335872000,
+  2013593600, 3691315200
+]
+*/
+
+// The console shows the actual values, the array shows the values stored in BE.
 
 ```
