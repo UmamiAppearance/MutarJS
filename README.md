@@ -39,9 +39,29 @@ Either way you have two builds available ([esm](https://developer.mozilla.org/en
 
 ## Importing
 
+### Node
+```js
+// common js
+const Mutar = require("mutar");
 
+// ES6 import
+import Mutar from "mutar";
+```
 
-## Toolkit
+### Browser
+```html
+<!-- iife / classic script tag -->
+<script src="Mutar.iife(.min).js"></script>
+```
+
+```js
+// ES6
+import Mutar from "./path/Mutar.esm(.min).js"
+```
+
+## Usage
+
+### Toolkit
 If you want to work with an existing TypedArray, you can use **Mutar** to analyse and modify it. Let's for example take a Uint32Array which holds the integer **400**. A little remark: If you plan to do a lot of manipulation to a single array, you should strongly consider to use the [Mutar Object](#Object).
 
 ```js
@@ -49,7 +69,7 @@ const Uint32 = new Uint32Array([400]);
 ```
 Mutar comes with some functions to analyse the given object. (Let us forget for a moment that we exactly know what kind of object it is).
 
-### Analysis
+#### Analysis
 ```js
 const Uint32 = new Uint32Array([400]);
 const regularArray = [400];
@@ -79,7 +99,7 @@ Mutar.isTypeOf(regularArray, Uint32Array);      // -> false
 
 Let's now take a look at the fun part: the _modification_.
 
-### Modification
+#### Modification
 One major focus of Mutar is to be aware of endianness. For simplicity, there is only a small section at the beginning of this chapter, that is going into this feature. The other here introduced functions are not using the opportunity to manipulate endianness, but that doesn't mean that it is not there. Every function, that manipulates the bytes has the possibility to set the integers in either little or big endian. If nothing is specified, the endianness of the system is getting used. 
 
 
@@ -218,11 +238,11 @@ const mutarObj = Mutar.from(splicedUint32);
 
 ```
 
-## Object
+### Object
 
 There are some opportunities for creating a **Mutar** object. One is, as shown right before, by calling the ``Mutar.from`` function. The default way looks like follows: 
 
-### Creating
+#### Creating
 ```js
 // Passing a regular array, plus the typed array function Uint32Array or string "Uint32Array"``
 // or shortcut string "Uint32".
@@ -251,7 +271,7 @@ const mutarObjBEadjust = new Mutar(new Uint32Array([300, 400]), null, false, tru
                                           // [738263040, 2415984640] 
 ```
 
-### Structure
+#### Structure
 Mutar objects have a pretty simple structure. The constructor sets:
  * ``littleEndian``
  * ``array``
@@ -286,7 +306,7 @@ Mutar {
 
 ```
 
-### Methods
+#### Methods
 We can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of a typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
 Even though the object has far more methods than the toolkit provides, there is much less to explain. The difference is, that the object holds the array which gets modified, it is therefore not necessary to always store the output of the method. And also we do not have to hand over a typed array (which will be done for you and will always be ``mutarObj.array``). Let's exemplary take a look at some methods.
 
@@ -387,6 +407,58 @@ mutarObj.map(demoFN);
 */
 
 // The console shows the actual values, the array shows the values stored in BE byte order.
-
-
 ```
+
+##### Available Children
+_getters:_
+* ``obj.BYTES_PER_ELEMENT``
+* ``obj.SYS_LITTLE_ENDIAN``
+* ``obj.buffer``
+* ``obj.byteLength``
+* ``obj.byteOffset``
+* ``obj.length``
+* ``obj.type``
+
+_methods:_
+* ``obj.at``
+* ``obj.clone``
+* ``obj.concat``
+* ``obj.conset``
+* ``obj.convert``
+* ``obj.copyWithin``
+* ``obj.detach``
+* ``obj.entries``
+* ``obj.every``
+* ``obj.extractArrayClone``
+* ``obj.fill``
+* ``obj.filter``
+* ``obj.find``
+* ``obj.findIndex``
+* ``obj.flipEndianness``
+* ``obj.forEach``
+* ``obj.includes``
+* ``obj.indexOf``
+* ``obj.insert``
+* ``obj.join``
+* ``obj.keys``
+* ``obj.lastIndexOf``
+* ``obj.map``
+* ``obj.pop``
+* ``obj.push``
+* ``obj.reduce``
+* ``obj.reduceRight``
+* ``obj.reverse``
+* ``obj.set``
+* ``obj.setAt``
+* ``obj.shift``
+* ``obj.slice``
+* ``obj.some``
+* ``obj.sort``
+* ``obj.splice``
+* ``obj.subarray``
+* ``obj.toLocaleString``
+* ``obj.toString``
+* ``obj.trim``
+* ``obj.unshift``
+* ``obj.updateArray``
+* ``obj.values``
