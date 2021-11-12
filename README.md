@@ -7,10 +7,38 @@
 In reality _TypedArrays_ are not mutable in terms of growing and shrinking. To emulate mutability a new array with the desired properties is created. This comes to a price of course. Every time the array length "changes", a new TypedArray is allocated in memory. Keep that in mind when using it, if this is critical to you.
 
 #### Endianness
-**Mutar** objects are designed to be aware of endianness. If not specified, the the endianness of the system is used, which is most likely little endian. Despite this fact, sometimes data (e.g. network related) differ in its endianness. It is possible to store them in a **Mutar** object, interact with it but keep the given byte order. (Values which are added or got are converted to the according endianness). 
+**Mutar** objects are designed to be aware of endianness. If not specified, the the endianness of the system is used, which is most likely little endian. Despite this fact, sometimes data (e.g. network related) differ in its endianness. It is possible to store them in a **Mutar** object, interact with it but keep the given byte order. (Values which are added or got are converted to the according endianness).
+
+## Installation
+
+### GitHub
+```sh
+git clone https://github.com/UmamiAppearance/MutarJS.git
+```
+
+### npm
+```sh
+nmp install mutar
+```
+
+## Builds
+The GitHub repository has ready to use builds included. You can find them in [dist](https://github.com/UmamiAppearance/MutarJS/tree/main/dist). The npm package comes without pre build files. 
+
+For building you have to run:
+
+```sh
+npm run build
+``` 
+
+Either way you have two builds available ([esm](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Modules) and [iife](https://developer.mozilla.org/en-US/docs/Glossary/IIFE)), plus a minified version of each. 
+* ``Mutar.esm.js``
+* ``Mutar.esm.min.js``
+* ``Mutar.iife.js``
+* ``Mutar.iife.min.js``
+
 
 ## Toolkit
-If you want to work with an existing TypedArray, you can use **Mutar** to analyse and modify it. Let's for example take a Uint32Array which holds the integer **400**. A little remark: If you plan to do a lot of manipulation to a single array, you should strongly consider to use the [Mutar Object](#Object). 
+If you want to work with an existing TypedArray, you can use **Mutar** to analyse and modify it. Let's for example take a Uint32Array which holds the integer **400**. A little remark: If you plan to do a lot of manipulation to a single array, you should strongly consider to use the [Mutar Object](#Object).
 
 ```js
 const Uint32 = new Uint32Array([400]);
@@ -335,23 +363,25 @@ const demoFN = (val) => {
     return newVal;
 } 
 
-mutarObj.map(demoFN);                               /* ->
-800
-900
-1000
-1100
-1200
-1300
-1400
-1500
-Uint32Array(8) [
-   537067520, 2214789120,
-  3892510720, 1275330560,
-  2953052160,  335872000,
-  2013593600, 3691315200
-]
+mutarObj.map(demoFN);
+/* 800
+   900
+  1000
+  1100
+  1200
+  1300
+  1400
+  1500
+  
+  Uint32Array(8) [
+    537067520, 2214789120,
+   3892510720, 1275330560,
+   2953052160,  335872000,
+   2013593600, 3691315200
+ ]
 */
 
-// The console shows the actual values, the array shows the values stored in BE.
+// The console shows the actual values, the array shows the values stored in BE byte order.
+
 
 ```
