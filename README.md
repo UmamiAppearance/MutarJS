@@ -1,6 +1,10 @@
 # Mutar
 **Mu**table**T**yped**Ar**ray - _/mu'taɾ/, spanish for to change, mutate_
 
+[![License](https://img.shields.io/github/license/UmamiAppearance/MutarJS?color=%23009911&style=for-the-badge)](./LICENSE)
+[![npm](https://img.shields.io/npm/v/mutar?color=%23009911&style=for-the-badge)](https://www.npmjs.com/package/mutar)
+
+
 **Mutar** is a toolkit to interact with typed arrays and modify them (or let's say a kit to emulate modification) and a constructor for a special object. It is a very convenient way to handle binary data. If constructed, the array behaves pretty much as a regular array. You can concatenate, pop, shift, unshift... On top of that the type can be changed from - let's say - Uint8 to Float64. 
 
 #### Mutability
@@ -144,7 +148,6 @@ Uint32[0] === clone[0]                                      // -> true
 // set back clone and original to 400.
 Uint32[0] = 400;
 clone[0] = 400;
-
 
 
 // Concatenation of arrays (let's join the original, the clone and a fresh array)
