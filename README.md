@@ -220,7 +220,7 @@ const mutarObjBEadjust = new Mutar(new Uint32Array([300, 400]), null, false, tru
 ```
 
 ### Structure
-Mutar objects have a pretty simple structure. The constructor returns:
+Mutar objects have a pretty simple structure. The constructor sets:
  * ``littleEndian``
  * ``array``
  * ``view``
@@ -256,4 +256,24 @@ Mutar {
 
 ### Methods
 You can interact directly with those children, but that is not very handy. There are plenty of methods callable from the root, which include all methods of a typed array and regular arrays (with the exception of flat & flatMap), plus the custom methods of the toolkit.  
-Even though the object has far more methods than the toolkit provides, there is much less to explain. The difference is, that the object holds the array which gets modified, it is therefore not necessary to always store the output of the method. And also you do not have to hand over a typed array (which will be done for you and will always be ``mutarObj.array``).
+Even though the object has far more methods than the toolkit provides, there is much less to explain. The difference is, that the object holds the array which gets modified, it is therefore not necessary to always store the output of the method. And also you do not have to hand over a typed array (which will be done for you and will always be ``mutarObj.array``). Let's exemplary take a look at some methods.
+
+```js
+const mutarObj = new Mutar([300, 400, 450, 500, 550, 600, 650, 700, 800], Uint32Array);
+
+// pop as method
+mutarObj.pop();                                     // -> 800
+
+// push as method
+mutarObj.push(750);                                 // -> 9
+
+// concat also behaves like the regular array method 
+mutarObj.concat(new Uint32Array([900, 1000]));      // -> returns a mutar object with the array [... 700, 800, 1000]
+
+// you can btw also concat and set, which saves the step of storing the concatenated return object
+mutarObj.conset(new Uint32Array([900, 1000]));
+
+// and this list goes on, just apply your knowledge about regular arrays and typed arrays
+// let us know look at the particularities 
+
+```
