@@ -1,7 +1,7 @@
 # Mutar
 **Mu**table**T**yped**Ar**ray - _/mu'taɾ/, spanish for to change, mutate_
 
-[![License](https://img.shields.io/github/license/UmamiAppearance/MutarJS?color=%23009911&style=for-the-badge)](./LICENSE)
+[![License](https://img.shields.io/github/license/UmamiAppearance/MutarJS?color=239911&style=for-the-badge)](./LICENSE)
 [![npm](https://img.shields.io/npm/v/mutar?color=%23009911&style=for-the-badge)](https://www.npmjs.com/package/mutar)
 
 
