@@ -1,6 +1,6 @@
 {
   "name": "mutar",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Toolkit and constructor to manipulate typed arrays.",
   "main": "dist/Mutar.cjs",
   "module": "src/Mutar.js",
