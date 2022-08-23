@@ -30,9 +30,10 @@ var Mutar = (function () {
       /** 
        * Test endianness:
        * Uint16Array: Uint16Array(1) [ 1 ]
-       * Binary:       [00000000 00000001]
-       * Uint8 (BE)                  [0 1]
-       * Uint8 (LE)                  [1 0]
+       * Binary (BE)   [00000000 00000001]
+       * Uint8  (BE)   [       0        1]
+       * Binary (LE)   [00000001 00000001]
+       * Uint8  (LE)   [       1        0]
        * 
        * Looking at index 0 shows 0 for
        * big endian and 1 for little endian
