@@ -29,7 +29,7 @@
   },
   "homepage": "https://github.com/UmamiAppearance/MutableTypedArrayJS#readme",
   "devDependencies": {
-    "@rollup/plugin-terser": "^0.1.0",
+    "@rollup/plugin-terser": "^0.2.0",
     "eslint": "^8.27.0",
     "rollup": "^3.2.5"
   }
