@@ -1,6 +1,6 @@
 {
   "name": "mutar",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Toolkit and constructor to manipulate typed arrays.",
   "main": "dist/Mutar.cjs",
   "module": "src/Mutar.js",
@@ -29,8 +29,8 @@
   },
   "homepage": "https://github.com/UmamiAppearance/MutableTypedArrayJS#readme",
   "devDependencies": {
-    "@rollup/plugin-terser": "^0.1.0",
-    "eslint": "^8.27.0",
-    "rollup": "^3.2.5"
+    "@rollup/plugin-terser": "^0.3.0",
+    "eslint": "^8.31.0",
+    "rollup": "^3.10.0"
   }
 }
