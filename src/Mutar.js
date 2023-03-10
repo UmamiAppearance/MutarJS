@@ -1,7 +1,7 @@
 /**
  * [Mutar]{@link https://github.com/UmamiAppearance/MutableTypedArrayJS}
  *
- * @version 0.1.4
+ * @version 0.1.5
  * @author UmamiAppearance [mail@umamiappearance.eu]
  * @license GPL-3.0
  *
