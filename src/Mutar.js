@@ -634,7 +634,7 @@ class Mutar {
     /**
      * Pushes values to the end of a given array.
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
-     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
+     * @param  {(number[]|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {Array} - Returns the new TypedArray and the new array length
      */
     static push(obj, ...args) {
@@ -698,7 +698,7 @@ class Mutar {
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj 
      * @param {number} start - Positive or negative index key. Over- or underflow cannot happen.  
      * @param {number} deleteCount - Positive number (count) 
-     * @param  {(...numbers|boolean)} items - Integers for insertion. The last item can be a boolean, which indicates if little endian is true/false 
+     * @param  {(number[]|boolean)} items - Integers for insertion. The last item can be a boolean, which indicates if little endian is true/false 
      * @returns {Array} - Returns the new array and the array of items, that were spliced
      * 
      */
@@ -793,7 +793,7 @@ class Mutar {
     /**
      * Unshifts bytes to the beginning of a given array.
      * @param {{ buffer: ArrayBufferLike; byteLength: any; byteOffset: any; length: any; BYTES_PER_ELEMENT: any; }} obj - Must be a TypedArray 
-     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
+     * @param  {(number[]|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {Array} - Returns the new TypedArray and the new array length
      */
     static unshift(obj, ...args) {
@@ -968,7 +968,7 @@ class Mutar {
 
     /**
      * Calls Mutar.concat.
-     * @param  {(...buffer|string[])} args - At least one Typed array for concatenation. Additionally takes the strings "force" and "trim"
+     * @param  {(buffer[]|string[])} args - At least one Typed array for concatenation. Additionally takes the strings "force" and "trim"
      * @returns {Object} - A new Mutar object with the concatenated array
      */
     concat(...args) {
@@ -994,7 +994,7 @@ class Mutar {
      * Concat and set the current array to the concatenated 
      * one (equal to concat, but replaces the existing array).
      * 
-     * @param  {(...buffer|string[])} args - At least one Typed array for concatenation. Additionally takes the strings "force" and "trim"
+     * @param  {(buffer[]|string[])} args - At least one Typed array for concatenation. Additionally takes the strings "force" and "trim"
      */
     conset(arr) {     
         this.updateArray = this.concat(arr).array;
@@ -1306,7 +1306,7 @@ class Mutar {
 
     /**
      * Calls Mutar.push
-     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
+     * @param  {(number[]|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {number} - The new length of the array
      */
     push(...args) {
@@ -1456,7 +1456,7 @@ class Mutar {
      * Calls Mutar.splice
      * @param {number} start - Positive or negative index key. Over- or underflow cannot happen.  
      * @param {number} deleteCount - Positive number (count) 
-     * @param  {(...numbers|boolean)} items - Integers for insertion. The last item can be a boolean, which indicates if little endian is true/false  
+     * @param  {(number[]|boolean)} items - Integers for insertion. The last item can be a boolean, which indicates if little endian is true/false  
      * @returns {{ buffer: ArrayBufferLike; }} - A typed array of the spliced integers
      */
     splice(start, deleteCount, ...items) {
@@ -1512,7 +1512,7 @@ class Mutar {
 
     /**
      * Calls Mutar.unshift
-     * @param  {(...number|boolean)} args - Positive or negative integers, last element can be the endianness bool
+     * @param  {(number[]|boolean)} args - Positive or negative integers, last element can be the endianness bool
      * @returns {number} - The new length of the array
      */
     unshift(...args) {
