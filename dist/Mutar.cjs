@@ -3,11 +3,11 @@
 /**
  * [Mutar]{@link https://github.com/UmamiAppearance/MutableTypedArrayJS}
  *
- * @version 0.1.6
+ * @version 0.1.7
  * @author UmamiAppearance [mail@umamiappearance.eu]
  * @license GPL-3.0
  *
- * Mutar is both toolkit a to interact with typed arrays and 
+ * Mutar is both a toolkit to interact with typed arrays and 
  * "modify" them and a constructor of a special object. Or  let"s
  * say a kit to emulate modification. Each "mutation" actually 
  * creates a new array every time.
